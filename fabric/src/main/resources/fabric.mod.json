@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "wondertrade",
+  "version": "${version}",
+  "name": "WonderTrade",
+  "description": "",
+  "authors": [
+    "zonary123"
+  ],
+  "contact": {
+    "github": "https://github.com/zonary123/WonderTrade"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.kingpixel.fabric.wondertrade.FabricModExample"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.22",
+    "minecraft": ">=1.20.1"
+  }
+}
