@@ -6,7 +6,6 @@ WonderTrade is a Minecraft plugin designed for Cobblemon. It introduces a unique
 
 ## Language
 
-
 ## Configuration
 
 ## Commands
