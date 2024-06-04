@@ -26,8 +26,6 @@ import java.util.Objects;
 public class WonderTrade {
   public static GooeyPage open(Player player) throws NoPokemonStoreException {
     try {
-      WonderTradeUtil.messagePool(CobbleWonderTrade.manager.getPokemonList());
-
       PlayerPartyStore partyStore = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID());
 
       GooeyButton fill = GooeyButton.builder()
@@ -85,6 +83,13 @@ public class WonderTrade {
           .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getNopokemon().getLore()))
           .build();
       }
+      if (CobbleWonderTrade.config.getPoketradeblacklist().contains(pokemon.getSpecies().getName())) {
+        return GooeyButton.builder()
+          .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowpokemon().getId()))
+          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowpokemon().getTitle()))
+          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowpokemon().getLore()))
+          .build();
+      }
       if (pokemon.getShiny() && !CobbleWonderTrade.config.isAllowshiny()) {
         return GooeyButton.builder()
           .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowshiny().getId()))
@@ -93,7 +98,7 @@ public class WonderTrade {
           .build();
       }
 
-      if (pokemon.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) {
+      if ((pokemon.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) || CobbleWonderTrade.config.getLegends().contains(pokemon.getSpecies().getName())) {
         return GooeyButton.builder()
           .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowlegendary().getId()))
           .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowlegendary().getTitle()))

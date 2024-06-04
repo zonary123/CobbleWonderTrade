@@ -75,7 +75,7 @@ public class WonderTradeConfirm {
     Pokemon pokemonplayer = partyStorageSlot.get(index);
 
     // Permitir que metan shinys o legendarios
-    
+
 
     Pokemon pokemongive;
     if (pokemonplayer == null) {
@@ -96,12 +96,15 @@ public class WonderTradeConfirm {
       partyStorageSlot.set(index, pokemongive);
     }
     if (pokemongive.isLegendary()) {
-      player.sendSystemMessage(TextUtil.parseHexCodes("&cYou can't trade a legendary pokemon!"));
+      player.sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getNotallowlegendary()));
 
     } else if (pokemongive.getShiny()) {
-      player.sendSystemMessage(TextUtil.parseHexCodes("&cYou can't trade a shiny pokemon!"));
+      player.sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getNotallowshiny()));
 
     }
+    player.sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getMessagewondertraderecieved().replace("%pokemon%", pokemongive.getSpecies().getName())
+      .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
+    CobbleWonderTrade.manager.getUserInfo().get(player.getUUID()).setMessagesend(false);
     CobbleWonderTrade.manager.addPlayerWithDate(player, CobbleWonderTrade.config.getCooldown());
     return true;
   }

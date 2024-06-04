@@ -27,12 +27,14 @@ public class Config {
   private int legendaries;
   private boolean israndom;
   private List<String> pokeblacklist;
+  private List<String> poketradeblacklist;
+  private List<String> legends;
   private List<String> aliases;
 
   public Config() {
     lang = "en";
     cooldown = 30;
-    cooldownmessage = 1;
+    cooldownmessage = 15;
     sizePool = 50;
     minlvreq = 5;
     minlv = 5;
@@ -44,7 +46,9 @@ public class Config {
     israndom = true;
     allowshiny = true;
     allowlegendary = true;
-    pokeblacklist = List.of("magikarp");
+    pokeblacklist = List.of("Magikarp");
+    poketradeblacklist = List.of("Magikarp");
+    legends = List.of("Magikarp");
     aliases = List.of("wt", "wondertrade");
   }
 
@@ -52,8 +56,16 @@ public class Config {
     return lang;
   }
 
+  public List<String> getLegends() {
+    return legends;
+  }
+
   public int getMinlvreq() {
     return minlvreq;
+  }
+
+  public List<String> getPoketradeblacklist() {
+    return poketradeblacklist;
   }
 
   public int getCooldownmessage() {
@@ -133,6 +145,8 @@ public class Config {
         aliases = config.getAliases();
         allowshiny = config.isAllowshiny();
         allowlegendary = config.isAllowlegendary();
+        legends = config.getLegends();
+        poketradeblacklist = config.getPoketradeblacklist();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path, "config.json",
           data);

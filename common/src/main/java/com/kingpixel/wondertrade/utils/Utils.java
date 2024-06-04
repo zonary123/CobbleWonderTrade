@@ -27,31 +27,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-/**
- * Abstract class that contains some utility methods.
- */
+
 public abstract class Utils {
-  /**
-   * Method to write some data to file.
-   *
-   * @param filePath the directory to write the file to
-   * @param filename the name of the file
-   * @param data     the data to write to file
-   *
-   * @return CompletableFuture if writing to file was successful
-   */
   public static CompletableFuture<Boolean> writeFileAsync(String filePath, String filename, String data) {
     CompletableFuture<Boolean> future = new CompletableFuture<>();
 
     Path path = Paths.get(new File("").getAbsolutePath() + filePath, filename);
     File file = path.toFile();
 
-    // If the path doesn't exist, create it.
     if (!Files.exists(path.getParent())) {
       file.getParentFile().mkdirs();
     }
 
-    // Write the data to file.
     try (AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(
       path,
       StandardOpenOption.WRITE,
@@ -86,14 +73,6 @@ public abstract class Utils {
   }
 
 
-  /**
-   * Method to write a file sync.
-   *
-   * @param file the location to write.
-   * @param data the data to write.
-   *
-   * @return true if the write was successful.
-   */
   public static boolean writeFileSync(File file, String data) {
     try {
       FileWriter writer = new FileWriter(file);
@@ -108,15 +87,6 @@ public abstract class Utils {
   }
 
 
-  /**
-   * Method to read a file asynchronously
-   *
-   * @param filePath the path of the directory to find the file at
-   * @param filename the name of the file
-   * @param callback a callback to deal with the data read
-   *
-   * @return true if the file was read successfully
-   */
   public static CompletableFuture<Boolean> readFileAsync(String filePath, String filename,
                                                          Consumer<String> callback) {
     CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -132,10 +102,10 @@ public abstract class Utils {
     }
 
     try (AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)) {
-      ByteBuffer buffer = ByteBuffer.allocate((int) fileChannel.size()); // Allocate buffer for the entire file
+      ByteBuffer buffer = ByteBuffer.allocate((int) fileChannel.size());
 
       Future<Integer> readResult = fileChannel.read(buffer, 0);
-      readResult.get(); // Wait for the read operation to complete
+      readResult.get();
       buffer.flip();
 
       byte[] bytes = new byte[buffer.remaining()];
@@ -155,14 +125,6 @@ public abstract class Utils {
     return future;
   }
 
-  /**
-   * Method to read files sync.
-   *
-   * @param file     The file to read
-   * @param callback what to do with the read data.
-   *
-   * @return true if the file could be read successfully.
-   */
   public static boolean readFileSync(File file, Consumer<String> callback) {
     try {
       Scanner reader = new Scanner(file);
@@ -182,11 +144,6 @@ public abstract class Utils {
     }
   }
 
-  /**
-   * Method to create a new gson builder.
-   *
-   * @return Gson instance.
-   */
   public static Gson newGson() {
     return new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
   }

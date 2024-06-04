@@ -60,7 +60,6 @@ public class WonderTradePool {
         try {
           UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTrade.open(action.getPlayer())));
         } catch (NoPokemonStoreException e) {
-          System.out.println(e);
           e.printStackTrace();
         }
       })
@@ -72,26 +71,34 @@ public class WonderTradePool {
 
     ChestTemplate template = ChestTemplate.builder(6)
       .fill(GooeyButton.builder().display(new ItemStack(Items.GRAY_STAINED_GLASS_PANE).setHoverName(Component.literal(""))).build())
-      .rectangle(0, 1, 5, 7, placeholder)
+      .rectangle(0, 0, 5, 9, placeholder)
       .fillFromList(buttons)
       .set(5, 4, close)
       .set(5, 0, previus)
       .set(5, 8, next)
       .build();
 
-    linkedPageBuilder.title("WonderTrade Pool");
+    linkedPageBuilder.title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getTitlepool()));
 
     LinkedPage firstPage = PaginationHelper.createPagesFromPlaceholders(template, buttons, linkedPageBuilder);
     return firstPage;
   }
 
   private static GooeyButton createPokemonButton(Pokemon p) {
-    GooeyButton pokemonButton;
-    pokemonButton = GooeyButton.builder()
-      .display(PokemonItem.from(p))
-      .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getColorhexnamepoke() + p.getSpecies().getName()))
-      .lore(Component.class, TextUtil.parseHexCodes(WonderTradeUtil.formatPokemonLore(p)))
-      .build();
-    return pokemonButton;
+    try {
+      GooeyButton pokemonButton = GooeyButton.builder()
+        .display(PokemonItem.from(p))
+        .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getColorhexnamepoke() + p.getSpecies().getName()))
+        .lore(Component.class, TextUtil.parseHexCodes(WonderTradeUtil.formatPokemonLore(p)))
+        .build();
+      return pokemonButton;
+    } catch (Exception e) {
+      CobbleWonderTrade.LOGGER.error("Error al crear el botón de Pokémon: ", e);
+      // Devuelve un botón de error si algo sale mal
+      return GooeyButton.builder()
+        .display(new ItemStack(Items.BARRIER))
+        .title("Error")
+        .build();
+    }
   }
 }

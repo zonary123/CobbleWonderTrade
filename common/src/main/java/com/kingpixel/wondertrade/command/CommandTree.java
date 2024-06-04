@@ -1,10 +1,10 @@
 package com.kingpixel.wondertrade.command;
 
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.base.CommandWonderTrade;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradeOther;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradePool;
-import com.kingpixel.wondertrade.permissions.WonderTradePermission;
 import com.kingpixel.wondertrade.utils.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -24,7 +24,7 @@ public class CommandTree {
   ) {
     for (String s : CobbleWonderTrade.config.getAliases()) {
       LiteralArgumentBuilder<CommandSourceStack> base = Commands.literal(s)
-        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.STS_BASE_PERMISSION));
+        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION));
       // /wt
       dispatcher.register(
         base.executes(new CommandWonderTrade())
@@ -33,7 +33,7 @@ public class CommandTree {
       // /wt other <player>
       dispatcher.register(
         base.then(Commands.literal("other")
-          .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.STS_BASE_PERMISSION))
+          .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_OTHER_PERMISSION))
           .then(
             Commands.argument("player", EntityArgument.player())
               .executes(new CommandWonderTradeOther())
@@ -42,7 +42,7 @@ public class CommandTree {
 
       // /wt reload
       dispatcher.register(base.then(Commands.literal("reload")
-        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.STS_RELOAD_PERMISSION))
+        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
         .executes(context -> {
           CobbleWonderTrade.load();
           Objects.requireNonNull(context.getSource().getPlayer()).sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
@@ -51,10 +51,8 @@ public class CommandTree {
 
       // /wt pool
       dispatcher.register(base.then(Commands.literal("pool")
-        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.STS_BASE_PERMISSION))
+        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
         .executes(new CommandWonderTradePool())));
     }
-
-
   }
 }

@@ -4,9 +4,10 @@ import com.kingpixel.wondertrade.Config.Config;
 import com.kingpixel.wondertrade.Config.Lang;
 import com.kingpixel.wondertrade.Config.WonderTradeConfig;
 import com.kingpixel.wondertrade.Manager.WonderTradeManager;
+import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.CommandTree;
-import com.kingpixel.wondertrade.permissions.WonderTradePermission;
 import com.kingpixel.wondertrade.utils.SpawnRates;
+import com.kingpixel.wondertrade.utils.TextUtil;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
@@ -15,8 +16,12 @@ import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Carlos Varas Alonso - 28/04/2024 23:50
@@ -33,7 +38,9 @@ public class CobbleWonderTrade {
   public static WonderTradeConfig dexpermission = new WonderTradeConfig();
   public static WonderTradePermission permissions = new WonderTradePermission();
   public static SpawnRates spawnRates = new SpawnRates();
-  private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+  private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+  private static final List<ScheduledFuture<?>> tasks = new ArrayList<>();
+
 
   public static void init() {
     LOGGER.info("Initializing " + MOD_NAME);
@@ -62,6 +69,32 @@ public class CobbleWonderTrade {
   }
 
   private static void tasks() {
+    for (ScheduledFuture<?> task : tasks) {
+      if (task != null && !task.isCancelled()) {
+        task.cancel(false);
+      }
+    }
+    tasks.clear();
 
+    ScheduledFuture<?> broadcastTask = scheduler.scheduleAtFixedRate(() -> {
+      if (server != null) {
+        server.getPlayerList().getPlayers().forEach(player -> WonderTradeUtil.messagePool(manager.getPokemonList()));
+      }
+    }, 0, CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
+    tasks.add(broadcastTask);
+
+    ScheduledFuture<?> playerCheckTask = scheduler.scheduleAtFixedRate(() -> {
+      if (server != null) {
+        server.getPlayerList().getPlayers().forEach(player -> {
+          if (manager.hasCooldownEnded(player) && !manager.getUserInfo().get(player.getUUID()).isMessagesend()) {
+            manager.getUserInfo().get(player.getUUID()).setMessagesend(true);
+            player.sendSystemMessage(TextUtil.parseHexCodes(language.getMessagewondertradeready().replace("%prefix%",
+              language.getPrefix()
+            )));
+          }
+        });
+      }
+    }, 0, 1, TimeUnit.MINUTES);
+    tasks.add(playerCheckTask);
   }
 }

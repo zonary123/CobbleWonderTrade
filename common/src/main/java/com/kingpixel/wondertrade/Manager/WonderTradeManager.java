@@ -12,10 +12,36 @@ import java.util.*;
  * @author Carlos Varas Alonso - 29/04/2024 1:31
  */
 public class WonderTradeManager {
-  private HashMap<UUID, Date> userInfo;
+  private HashMap<UUID, UserInfo> userInfo;
   private List<Pokemon> pokemonList;
 
-  public HashMap<UUID, Date> getUserInfo() {
+  public class UserInfo {
+    private boolean messagesend;
+    private Date date;
+
+    public UserInfo(Date date) {
+      this.date = date;
+      this.messagesend = false;
+    }
+
+    public boolean isMessagesend() {
+      return messagesend;
+    }
+
+    public Date getDate() {
+      return date;
+    }
+
+    public void setMessagesend(boolean messagesend) {
+      this.messagesend = messagesend;
+    }
+
+    public void setDate(Date date) {
+      this.date = date;
+    }
+  }
+
+  public HashMap<UUID, UserInfo> getUserInfo() {
     return userInfo;
   }
 
@@ -30,7 +56,7 @@ public class WonderTradeManager {
 
 
   public void addPlayer(Entity player) {
-    userInfo.put(player.getUUID(), new Date());
+    userInfo.put(player.getUUID(), new UserInfo(new Date()));
   }
 
   public void init() {
@@ -50,7 +76,7 @@ public class WonderTradeManager {
     Calendar calendar = Calendar.getInstance();
     calendar.add(Calendar.MINUTE, minutes);
     Date futureDate = calendar.getTime();
-    userInfo.put(player.getUUID(), futureDate);
+    userInfo.put(player.getUUID(), new UserInfo(futureDate));
   }
 
   public Pokemon putPokemon(Pokemon pokemon) {
@@ -61,13 +87,13 @@ public class WonderTradeManager {
   }
 
   public boolean hasCooldownEnded(Entity player) {
-    Date userDate = userInfo.get(player.getUUID());
+    UserInfo userDate = userInfo.get(player.getUUID());
     if (userDate == null) {
       return true; // No cooldown was set for this player
     }
 
     Date now = new Date();
-    return now.after(userDate); // Returns true if the current date is after the user's date
+    return now.after(userDate.getDate()); // Returns true if the current date is after the user's date
   }
 
   public Pokemon getRandomPokemon() {

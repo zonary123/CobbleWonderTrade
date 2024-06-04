@@ -71,7 +71,7 @@ public class WonderTradeUtil {
     listpokemons.forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().getName()));
 
     do {
-      if (shinyR == 0) { // shinyR será 0 con una probabilidad de 1/getShinyrate()
+      if (shinyR == 0) {
         pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
         pokemon.setShiny(true);
       } else {
@@ -79,7 +79,7 @@ public class WonderTradeUtil {
         pokemon.setShiny(false);
       }
 
-      if (legendaryR == 0) { // legendaryR será 0 con una probabilidad de 1/getLegendaryrate()
+      if (legendaryR == 0) {
         pokemon.setSpecies(legendarys.get(RANDOM.nextInt(legendarys.size())));
         if (shinyR == 0) {
           pokemon.setShiny(true);
@@ -87,7 +87,6 @@ public class WonderTradeUtil {
       }
     } while (generatedPokemonNames.contains(pokemon.getSpecies().getName()));
 
-    // Añadir el nombre del Pokémon al registro
     generatedPokemonNames.add(pokemon.getSpecies().getName());
     pokemon.setLevel(RANDOM.nextInt(CobbleWonderTrade.config.getMaxlv() - CobbleWonderTrade.config.getMinlv()) + CobbleWonderTrade.config.getMinlv());
     return pokemon;
@@ -95,7 +94,7 @@ public class WonderTradeUtil {
 
 
   public static String getUserCooldown(UUID userId) {
-    Date userDate = CobbleWonderTrade.manager.getUserInfo().get(userId);
+    Date userDate = CobbleWonderTrade.manager.getUserInfo().get(userId).getDate();
     if (userDate == null) {
       return "No cooldown";
     }
@@ -126,7 +125,6 @@ public class WonderTradeUtil {
     }
     lore.addAll(l);
     lore.replaceAll(s -> s.replace("%level%", String.valueOf(pokemon.getLevel()))
-      .replace("%pokeball%", pokemon.getCaughtBall().getName().toLanguageKey())
       .replace("%shiny%", pokemon.getShiny() ? "Si" : "No")
       .replace("%legends%", pokemon.isLegendary() ? "Si" : "No")
       .replace("%nature%",
