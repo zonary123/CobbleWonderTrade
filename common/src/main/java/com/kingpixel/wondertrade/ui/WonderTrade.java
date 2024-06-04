@@ -2,7 +2,6 @@ package com.kingpixel.wondertrade.ui;
 
 import ca.landonjw.gooeylibs2.api.UIManager;
 import ca.landonjw.gooeylibs2.api.button.GooeyButton;
-import ca.landonjw.gooeylibs2.api.button.RateLimitedButton;
 import ca.landonjw.gooeylibs2.api.page.GooeyPage;
 import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.cobblemon.mod.common.Cobblemon;
@@ -20,7 +19,6 @@ import net.minecraft.world.entity.player.Player;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Carlos Varas Alonso - 26/05/2024 4:04
@@ -37,12 +35,15 @@ public class WonderTrade {
         .title("")
         .build();
 
-      RateLimitedButton poke1 = createButtonPokemon(partyStore.get(0), 0);
-      RateLimitedButton poke2 = createButtonPokemon(partyStore.get(1), 1);
-      RateLimitedButton poke3 = createButtonPokemon(partyStore.get(2), 2);
+      GooeyButton poke1 = createButtonPokemon(partyStore.get(0), 0);
+      GooeyButton poke2 = createButtonPokemon(partyStore.get(1), 1);
+      GooeyButton poke3 = createButtonPokemon(partyStore.get(2), 2);
 
       List<String> loreinfo = new ArrayList<>(CobbleWonderTrade.language.getInfo().getLore());
-      loreinfo.replaceAll(s -> s.replace("%time%", WonderTradeUtil.getUserCooldown(player.getUUID())));
+      loreinfo.replaceAll(s -> s.replace("%time%", WonderTradeUtil.getUserCooldown(player.getUUID()))
+        .replace("%shinys%", CobbleWonderTrade.manager.getPokemonList().stream().filter(Pokemon::getShiny).count() + "")
+        .replace("%legends%",
+          CobbleWonderTrade.manager.getPokemonList().stream().filter(Pokemon::isLegendary).count() + ""));
 
       GooeyButton info = GooeyButton.builder()
         .display(Utils.parseItemId(CobbleWonderTrade.language.getInfo().getId()))
@@ -51,9 +52,9 @@ public class WonderTrade {
         .onClick(action -> UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open())))
         .build();
 
-      RateLimitedButton poke4 = createButtonPokemon(partyStore.get(3), 3);
-      RateLimitedButton poke5 = createButtonPokemon(partyStore.get(4), 4);
-      RateLimitedButton poke6 = createButtonPokemon(partyStore.get(5), 5);
+      GooeyButton poke4 = createButtonPokemon(partyStore.get(3), 3);
+      GooeyButton poke5 = createButtonPokemon(partyStore.get(4), 4);
+      GooeyButton poke6 = createButtonPokemon(partyStore.get(5), 5);
 
       ChestTemplate template = ChestTemplate.builder(3)
         .fill(fill)
@@ -75,34 +76,55 @@ public class WonderTrade {
     return null;
   }
 
-  private static RateLimitedButton createButtonPokemon(Pokemon pokemon, int index) {
-    GooeyButton poke;
+  private static GooeyButton createButtonPokemon(Pokemon pokemon, int index) {
     try {
-      if (pokemon != null) {
-        poke = GooeyButton.builder()
+      if (pokemon == null) {
+        return GooeyButton.builder()
+          .display(Utils.parseItemId(CobbleWonderTrade.language.getNopokemon().getId()))
+          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getNopokemon().getTitle()))
+          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getNopokemon().getLore()))
+          .build();
+      }
+      if (pokemon.getShiny() && !CobbleWonderTrade.config.isAllowshiny()) {
+        return GooeyButton.builder()
+          .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowshiny().getId()))
+          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowshiny().getTitle()))
+          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowshiny().getLore()))
+          .build();
+      }
+
+      if (pokemon.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) {
+        return GooeyButton.builder()
+          .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowlegendary().getId()))
+          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowlegendary().getTitle()))
+          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowlegendary().getLore()))
+          .build();
+      }
+      if (pokemon.getLevel() < CobbleWonderTrade.config.getMinlvreq()) {
+        return GooeyButton.builder()
+          .display(PokemonItem.from(pokemon))
+          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getColorhexnamepoke() + pokemon.getSpecies().getName()))
+          .lore(Component.class, TextUtil.parseHexCodes(WonderTradeUtil.formatPokemonLore(pokemon)))
+          .build();
+      }
+      if (pokemon.getLevel() >= CobbleWonderTrade.config.getMinlvreq()) {
+        return GooeyButton.builder()
           .display(PokemonItem.from(pokemon))
           .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getColorhexnamepoke() + pokemon.getSpecies().getName()))
           .lore(Component.class, TextUtil.parseHexCodes(WonderTradeUtil.formatPokemonLore(pokemon)))
           .onClick((action) -> UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradeConfirm.open(
             pokemon, index))))
           .build();
-      } else {
-        poke = GooeyButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.language.getNopokemon().getId()))
-          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getNopokemon().getTitle()))
-          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getNopokemon().getLore()))
-          .build();
       }
+    } catch (NullPointerException e) {
+      // Manejar la excepción específica aquí
+      System.err.println("Se produjo un error: " + e.getMessage());
+      return null;
     } catch (Exception e) {
-      e.printStackTrace();
+      // Manejar otras excepciones aquí
+      System.err.println("Se produjo un error desconocido: " + e.getMessage());
       return null;
     }
-    RateLimitedButton button = RateLimitedButton.builder()
-      .button(poke)
-      .limit(1)
-      .interval(3, TimeUnit.SECONDS)
-      .build();
-    button.update();
-    return button;
+    return null;
   }
 }

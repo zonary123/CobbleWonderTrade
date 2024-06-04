@@ -14,7 +14,13 @@ import java.util.concurrent.CompletableFuture;
 public class Config {
   private String lang;
   private int cooldown;
+  private int cooldownmessage;
   private int sizePool;
+  private int minlvreq;
+  private int minlv;
+  private int maxlv;
+  private boolean allowshiny;
+  private boolean allowlegendary;
   private int shinyrate;
   private int legendaryrate;
   private int shinys;
@@ -26,18 +32,40 @@ public class Config {
   public Config() {
     lang = "en";
     cooldown = 30;
+    cooldownmessage = 1;
     sizePool = 50;
+    minlvreq = 5;
+    minlv = 5;
+    maxlv = 50;
     shinyrate = 8192;
     legendaryrate = 16512;
     shinys = 0;
     legendaries = 0;
     israndom = true;
+    allowshiny = true;
+    allowlegendary = true;
     pokeblacklist = List.of("magikarp");
     aliases = List.of("wt", "wondertrade");
   }
 
   public String getLang() {
     return lang;
+  }
+
+  public int getMinlvreq() {
+    return minlvreq;
+  }
+
+  public int getCooldownmessage() {
+    return cooldownmessage;
+  }
+
+  public int getMinlv() {
+    return minlv;
+  }
+
+  public int getMaxlv() {
+    return maxlv;
   }
 
   public int getCooldown() {
@@ -76,6 +104,14 @@ public class Config {
     return aliases;
   }
 
+  public boolean isAllowshiny() {
+    return allowshiny;
+  }
+
+  public boolean isAllowlegendary() {
+    return allowlegendary;
+  }
+
   public void init() {
     CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.path, "config.json",
       el -> {
@@ -83,7 +119,11 @@ public class Config {
         Config config = gson.fromJson(el, Config.class);
         lang = config.getLang();
         cooldown = config.getCooldown();
+        cooldownmessage = config.getCooldownmessage();
         sizePool = config.getSizePool();
+        minlvreq = config.getMinlvreq();
+        minlv = config.getMinlv();
+        maxlv = config.getMaxlv();
         shinyrate = config.getShinyrate();
         legendaryrate = config.getLegendaryrate();
         shinys = config.getShinys();
@@ -91,6 +131,8 @@ public class Config {
         israndom = config.isIsrandom();
         pokeblacklist = config.getPokeblacklist();
         aliases = config.getAliases();
+        allowshiny = config.isAllowshiny();
+        allowlegendary = config.isAllowlegendary();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path, "config.json",
           data);

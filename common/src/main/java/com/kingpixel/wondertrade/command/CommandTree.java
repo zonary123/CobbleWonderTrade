@@ -8,7 +8,6 @@ import com.kingpixel.wondertrade.permissions.WonderTradePermission;
 import com.kingpixel.wondertrade.utils.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -57,9 +56,5 @@ public class CommandTree {
     }
 
 
-  }
-
-  public static void register(CommandDispatcher<CommandSourceStack> commandSourceStackCommandDispatcher, CommandBuildContext commandBuildContext, Commands.CommandSelection commandSelection) {
-    register(commandSourceStackCommandDispatcher);
   }
 }

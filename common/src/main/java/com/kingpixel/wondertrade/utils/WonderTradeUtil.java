@@ -2,8 +2,10 @@ package com.kingpixel.wondertrade.utils;
 
 import com.cobblemon.mod.common.api.pokemon.PokemonPropertyExtractor;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
+import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
+import com.cobblemon.mod.common.util.LocalizationUtilsKt;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 
 import java.util.*;
@@ -47,13 +49,11 @@ public class WonderTradeUtil {
     int legendaries = (int) pokemons.stream().filter(Pokemon::isLegendary).count();
     int total = pokemons.size();
 
-    CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> {
-      player.sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getMessagepoolwondertrade()
-        .replace("%shinys%", String.valueOf(shinys))
-        .replace("%legendaries%", String.valueOf(legendaries))
-        .replace("%total%", String.valueOf(total))
-        .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
-    });
+    CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> player.sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getMessagepoolwondertrade()
+      .replace("%shinys%", String.valueOf(shinys))
+      .replace("%legends%", String.valueOf(legendaries))
+      .replace("%total%", String.valueOf(total))
+      .replace("%prefix%", CobbleWonderTrade.language.getPrefix()))));
 
   }
 
@@ -67,21 +67,29 @@ public class WonderTradeUtil {
     int shinyR = RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
     int legendaryR = RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
 
-    if (shinyR == 0) { // shinyR será 0 con una probabilidad de 1/getShinyrate()
-      pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
-      pokemon.setShiny(true);
-    } else {
-      pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
-      pokemon.setShiny(false);
-    }
+    Set<String> generatedPokemonNames = new HashSet<>();
+    listpokemons.forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().getName()));
 
-    if (legendaryR == 0) { // legendaryR será 0 con una probabilidad de 1/getLegendaryrate()
-      pokemon.setSpecies(legendarys.get(RANDOM.nextInt(legendarys.size())));
-      if (shinyR == 0) {
+    do {
+      if (shinyR == 0) { // shinyR será 0 con una probabilidad de 1/getShinyrate()
+        pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
         pokemon.setShiny(true);
+      } else {
+        pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
+        pokemon.setShiny(false);
       }
-    }
 
+      if (legendaryR == 0) { // legendaryR será 0 con una probabilidad de 1/getLegendaryrate()
+        pokemon.setSpecies(legendarys.get(RANDOM.nextInt(legendarys.size())));
+        if (shinyR == 0) {
+          pokemon.setShiny(true);
+        }
+      }
+    } while (generatedPokemonNames.contains(pokemon.getSpecies().getName()));
+
+    // Añadir el nombre del Pokémon al registro
+    generatedPokemonNames.add(pokemon.getSpecies().getName());
+    pokemon.setLevel(RANDOM.nextInt(CobbleWonderTrade.config.getMaxlv() - CobbleWonderTrade.config.getMinlv()) + CobbleWonderTrade.config.getMinlv());
     return pokemon;
   }
 
@@ -106,8 +114,43 @@ public class WonderTradeUtil {
   }
 
   public static List<String> formatPokemonLore(Pokemon pokemon) {
+    String moveOne = pokemon.getMoveSet().getMoves().size() >= 1 ? pokemon.getMoveSet().get(0).getDisplayName().getString() : "Empty";
+    String moveTwo = pokemon.getMoveSet().getMoves().size() >= 2 ? pokemon.getMoveSet().get(1).getDisplayName().getString() : "Empty";
+    String moveThree = pokemon.getMoveSet().getMoves().size() >= 3 ? pokemon.getMoveSet().get(2).getDisplayName().getString() : "Empty";
+    String moveFour = pokemon.getMoveSet().getMoves().size() >= 4 ? pokemon.getMoveSet().get(3).getDisplayName().getString() : "Empty";
+    List<String> l = new ArrayList<>(CobbleWonderTrade.language.getLorepokemon());
     List<String> lore = new ArrayList<>();
 
+    if (pokemon.getLevel() < CobbleWonderTrade.config.getMinlvreq()) {
+      lore.add(CobbleWonderTrade.language.getDonthavelevel());
+    }
+    lore.addAll(l);
+    lore.replaceAll(s -> s.replace("%level%", String.valueOf(pokemon.getLevel()))
+      .replace("%pokeball%", pokemon.getCaughtBall().getName().toLanguageKey())
+      .replace("%shiny%", pokemon.getShiny() ? "Si" : "No")
+      .replace("%legends%", pokemon.isLegendary() ? "Si" : "No")
+      .replace("%nature%",
+        LocalizationUtilsKt.lang(pokemon.getNature().getDisplayName().replace("cobblemon.", "")).getString())
+      .replace("%ability%",
+        LocalizationUtilsKt.lang(pokemon.getAbility().getDisplayName().replace("cobblemon.", "")).getString())
+      .replace("%hp%", String.valueOf(pokemon.getIvs().get(Stats.HP)))
+      .replace("%atk%", String.valueOf(pokemon.getIvs().get(Stats.ATTACK)))
+      .replace("%def%", String.valueOf(pokemon.getIvs().get(Stats.DEFENCE)))
+      .replace("%spa%", String.valueOf(pokemon.getIvs().get(Stats.SPECIAL_ATTACK)))
+      .replace("%spd%", String.valueOf(pokemon.getIvs().get(Stats.SPECIAL_DEFENCE)))
+      .replace("%spe%", String.valueOf(pokemon.getIvs().get(Stats.SPEED)))
+      .replace("%evhp%", String.valueOf(pokemon.getEvs().get(Stats.HP)))
+      .replace("%evatk%", String.valueOf(pokemon.getEvs().get(Stats.ATTACK)))
+      .replace("%evdef%", String.valueOf(pokemon.getEvs().get(Stats.DEFENCE)))
+      .replace("%evspa%", String.valueOf(pokemon.getEvs().get(Stats.SPECIAL_ATTACK)))
+      .replace("%evspd%", String.valueOf(pokemon.getEvs().get(Stats.SPECIAL_DEFENCE)))
+      .replace("%evspe%", String.valueOf(pokemon.getEvs().get(Stats.SPEED)))
+      .replace("%move1%", moveOne)
+      .replace("%move2%", moveTwo)
+      .replace("%move3%", moveThree)
+      .replace("%move4%", moveFour)
+      .replace("%form%", pokemon.getForm().getName())
+      .replace("%minlevel%", String.valueOf(CobbleWonderTrade.config.getMinlvreq())));
     return lore;
   }
 
