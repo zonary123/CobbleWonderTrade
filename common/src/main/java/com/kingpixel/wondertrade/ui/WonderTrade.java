@@ -10,7 +10,7 @@ import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
 import com.cobblemon.mod.common.item.PokemonItem;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.utils.TextUtil;
+import com.kingpixel.wondertrade.utils.AdventureTranslator;
 import com.kingpixel.wondertrade.utils.Utils;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.network.chat.Component;
@@ -45,8 +45,8 @@ public class WonderTrade {
 
       GooeyButton info = GooeyButton.builder()
         .display(Utils.parseItemId(CobbleWonderTrade.language.getInfo().getId()))
-        .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getInfo().getTitle()))
-        .lore(Component.class, TextUtil.parseHexCodes(loreinfo))
+        .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getInfo().getTitle()))
+        .lore(Component.class, AdventureTranslator.toNativeL(loreinfo))
         .onClick(action -> UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open())))
         .build();
 
@@ -64,7 +64,7 @@ public class WonderTrade {
         .set(1, 6, poke5)
         .set(1, 7, poke6)
         .build();
-      GooeyPage page = GooeyPage.builder().template(template).title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getTitle())).build();
+      GooeyPage page = GooeyPage.builder().template(template).title(AdventureTranslator.toNative(CobbleWonderTrade.language.getTitle())).build();
       page.update();
       return page;
     } catch (NoPokemonStoreException e) {
@@ -79,44 +79,49 @@ public class WonderTrade {
       if (pokemon == null) {
         return GooeyButton.builder()
           .display(Utils.parseItemId(CobbleWonderTrade.language.getNopokemon().getId()))
-          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getNopokemon().getTitle()))
-          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getNopokemon().getLore()))
+          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getNopokemon().getTitle()))
+          .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getNopokemon().getLore()))
           .build();
       }
       if (CobbleWonderTrade.config.getPoketradeblacklist().contains(pokemon.getSpecies().getName())) {
         return GooeyButton.builder()
           .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowpokemon().getId()))
-          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowpokemon().getTitle()))
-          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowpokemon().getLore()))
+          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnotallowpokemon().getTitle()))
+          .lore(Component.class,
+            AdventureTranslator.toNativeL(CobbleWonderTrade.language.getItemnotallowpokemon().getLore()))
           .build();
       }
       if (pokemon.getShiny() && !CobbleWonderTrade.config.isAllowshiny()) {
         return GooeyButton.builder()
           .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowshiny().getId()))
-          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowshiny().getTitle()))
-          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowshiny().getLore()))
+          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnotallowshiny().getTitle()))
+          .lore(Component.class,
+            AdventureTranslator.toNativeL(CobbleWonderTrade.language.getItemnotallowshiny().getLore()))
           .build();
       }
 
       if ((pokemon.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) || CobbleWonderTrade.config.getLegends().contains(pokemon.getSpecies().getName())) {
         return GooeyButton.builder()
           .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowlegendary().getId()))
-          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowlegendary().getTitle()))
-          .lore(Component.class, TextUtil.parseHexCodes(CobbleWonderTrade.language.getItemnotallowlegendary().getLore()))
+          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnotallowlegendary().getTitle()))
+          .lore(Component.class,
+            AdventureTranslator.toNativeL(CobbleWonderTrade.language.getItemnotallowlegendary().getLore()))
           .build();
       }
       if (pokemon.getLevel() < CobbleWonderTrade.config.getMinlvreq()) {
         return GooeyButton.builder()
           .display(PokemonItem.from(pokemon))
-          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getColorhexnamepoke() + pokemon.getSpecies().getName()))
-          .lore(Component.class, TextUtil.parseHexCodes(WonderTradeUtil.formatPokemonLore(pokemon)))
+          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getColorhexnamepoke().replace("%pokemon%",
+            pokemon.getSpecies().getName())))
+          .lore(Component.class, AdventureTranslator.toNativeL(WonderTradeUtil.formatPokemonLore(pokemon)))
           .build();
       }
       if (pokemon.getLevel() >= CobbleWonderTrade.config.getMinlvreq()) {
         return GooeyButton.builder()
           .display(PokemonItem.from(pokemon))
-          .title(TextUtil.parseHexCodes(CobbleWonderTrade.language.getColorhexnamepoke() + pokemon.getSpecies().getName()))
-          .lore(Component.class, TextUtil.parseHexCodes(WonderTradeUtil.formatPokemonLore(pokemon)))
+          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getColorhexnamepoke().replace("%pokemon%",
+            pokemon.getSpecies().getName())))
+          .lore(Component.class, AdventureTranslator.toNativeL(WonderTradeUtil.formatPokemonLore(pokemon)))
           .onClick((action) -> UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradeConfirm.open(
             pokemon, index))))
           .build();

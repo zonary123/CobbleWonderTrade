@@ -2,12 +2,12 @@ package com.kingpixel.wondertrade;
 
 import com.kingpixel.wondertrade.Config.Config;
 import com.kingpixel.wondertrade.Config.Lang;
-import com.kingpixel.wondertrade.Config.WonderTradeConfig;
+import com.kingpixel.wondertrade.Manager.WonderTradeConfig;
 import com.kingpixel.wondertrade.Manager.WonderTradeManager;
 import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.CommandTree;
+import com.kingpixel.wondertrade.utils.AdventureTranslator;
 import com.kingpixel.wondertrade.utils.SpawnRates;
-import com.kingpixel.wondertrade.utils.TextUtil;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
@@ -80,7 +80,7 @@ public class CobbleWonderTrade {
       if (server != null) {
         server.getPlayerList().getPlayers().forEach(player -> WonderTradeUtil.messagePool(manager.getPokemonList()));
       }
-    }, 0, CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
+    }, CobbleWonderTrade.config.getCooldownmessage(), CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
     tasks.add(broadcastTask);
 
     ScheduledFuture<?> playerCheckTask = scheduler.scheduleAtFixedRate(() -> {
@@ -88,7 +88,7 @@ public class CobbleWonderTrade {
         server.getPlayerList().getPlayers().forEach(player -> {
           if (manager.hasCooldownEnded(player) && !manager.getUserInfo().get(player.getUUID()).isMessagesend()) {
             manager.getUserInfo().get(player.getUUID()).setMessagesend(true);
-            player.sendSystemMessage(TextUtil.parseHexCodes(language.getMessagewondertradeready().replace("%prefix%",
+            player.sendSystemMessage(AdventureTranslator.toNative(language.getMessagewondertradeready().replace("%prefix%",
               language.getPrefix()
             )));
           }

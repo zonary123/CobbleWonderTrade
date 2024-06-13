@@ -23,6 +23,8 @@ public class Lang {
   private String messagewondertradeready;
   private String messagewondertraderecieved;
   private String fill;
+  private String yes;
+  private String no;
   private String colorhexnamepoke;
   private String donthavelevel;
   private String notallowshiny;
@@ -42,9 +44,11 @@ public class Lang {
   public Lang() {
     prefix = "&8[&6WonderTrade&8] ";
     reload = "%prefix% &aReloaded!";
-    title = "{#ff7900>#ffdbba}WonderTrade";
-    titlepool = "{#ff7900>#ffdbba}WonderTrade Pool";
-    titleconfirm = "{#ff7900>#ffdbba}Confirm";
+    title = "<gradient:#ff7900:#ffdbba>WonderTrade";
+    titlepool = "&6WonderTrade Pool";
+    titleconfirm = "<gradient:#ff7900:#ffdbba>Confirm";
+    yes = "&aYes";
+    no = "&cNo";
     message = "%prefix% &aYou have received a &6%pokemon%&a!";
     messagepoolwondertrade = "%prefix% &aThere are currently &e%total% &cpokemons &ain the WonderTrade pool! \n " +
       "%prefix% " +
@@ -53,18 +57,21 @@ public class Lang {
     messagewondertradeready = "%prefix% &aWonderTrade is ready!";
     messagewondertraderecieved = "%prefix% &aYou have received a %pokemon% pokemon!";
     fill = "minecraft:gray_stained_glass_pane";
-    colorhexnamepoke = "{#ff7900>#ffdbba}";
-    notallowshiny = "{#db2e2e>#e68c8c}You can't trade shiny pokemon!";
-    notallowlegendary = "{#db2e2e>#e68c8c}You can't trade legendary pokemon!";
-    info = new ItemModel("minecraft:book", "{#ff7900>#ffdbba}Info WonderTrade", List.of("&7Shinys: &e%shinys%",
+    colorhexnamepoke = "<gradient:#ff7900:#ffdbba>%pokemon%</gradient>";
+    notallowshiny = "<gradient:#db2e2e:#e68c8c>You can't trade shiny pokemon!";
+    notallowlegendary = "<gradient:#db2e2e:#e68c8c>You can't trade legendary pokemon!";
+    info = new ItemModel("minecraft:book", "<gradient:#ff7900:#ffdbba>Info WonderTrade", List.of("&7Shinys: &e%shinys%",
       "&7Legendaries: &e%legends%", "&7Time: &e%time%"));
-    nopokemon = new ItemModel("cobblemon:poke_ball", "{#db2e2e>#e68c8c}Empty slot", List.of(""));
-    confirm = new ItemModel("minecraft:lime_stained_glass_pane", "{#3ec758>#a2f2b2}Confirm", List.of(""));
-    cancel = new ItemModel("minecraft:red_stained_glass_pane", "{#db2e2e>#e68c8c}Cancel", List.of(""));
-    itempreviouspage = new ItemModel("minecraft:arrow", "§7Previous Page", List.of("§7Click to go to the previous page"));
-    itemnextpage = new ItemModel("minecraft:arrow", "§7Next Page", List.of("§7Click to go to the next page"));
-    itemclose = new ItemModel("minecraft:barrier", "§cClose", List.of("§7Click to close the menu"));
-    lorepokemon = List.of("{#D3D3D3}§7Click to select this pokemon",
+    nopokemon = new ItemModel("cobblemon:poke_ball", "<gradient:#db2e2e:#e68c8c>Empty slot", List.of(""));
+    confirm = new ItemModel("minecraft:lime_stained_glass_pane", "<gradient:#3ec758:#a2f2b2>Confirm</gradient>",
+      List.of(
+        ""));
+    cancel = new ItemModel("minecraft:red_stained_glass_pane", "<gradient:#db2e2e:#e68c8c>Cancel", List.of(""));
+    itempreviouspage = new ItemModel("minecraft:arrow", "&7Previous Page", List.of("&7Click to go to the previous " +
+      "page"));
+    itemnextpage = new ItemModel("minecraft:arrow", "&7Next Page", List.of("&7Click to go to the next page"));
+    itemclose = new ItemModel("minecraft:barrier", "&cClose", List.of("&7Click to close the menu"));
+    lorepokemon = List.of("&7Click to select this pokemon",
       "&8Level: &f%level%",
       "&eShiny: &f%shiny%",
       "&5Legendario: &f%legends%",
@@ -82,10 +89,22 @@ public class Lang {
       "  &f%move3%",
       "  &f%move4%",
       "&6Form: %form%");
-    donthavelevel = "{#db2e2e>#e68c8c}You don't have a pokemon with level %minlevel%!";
-    itemnotallowpokemon = new ItemModel("cobblemon:net_ball", "{#db2e2e>#e68c8c}Not allow pokemon", List.of(""));
-    itemnotallowshiny = new ItemModel("cobblemon:luxury_ball", "{#db2e2e>#e68c8c}Not allow shiny", List.of(""));
-    itemnotallowlegendary = new ItemModel("cobblemon:master_ball", "{#db2e2e>#e68c8c}Not allow legendary", List.of(""));
+    donthavelevel = "<gradient:#db2e2e:#e68c8c>You don't have a pokemon with level %minlevel%!</gradient>";
+    itemnotallowpokemon = new ItemModel("cobblemon:net_ball", "<gradient:#db2e2e:#e68c8c>Not allow pokemon", List.of(
+      ""));
+    itemnotallowshiny = new ItemModel("cobblemon:luxury_ball", "<gradient:#db2e2e:#e68c8c>Not allow shiny", List.of(
+      ""));
+    itemnotallowlegendary = new ItemModel("cobblemon:master_ball", "<gradient:#db2e2e:#e68c8c>Not allow legendary",
+      List.of(
+        ""));
+  }
+
+  public String getYes() {
+    return yes;
+  }
+
+  public String getNo() {
+    return no;
   }
 
   public ItemModel getItemnotallowpokemon() {
@@ -195,6 +214,8 @@ public class Lang {
         Lang lang = gson.fromJson(el, Lang.class);
         prefix = lang.getPrefix();
         reload = lang.getReload();
+        yes = lang.getYes();
+        no = lang.getNo();
         message = lang.getMessage();
         messagepoolwondertrade = lang.getMessagepoolwondertrade();
         fill = lang.getFill();

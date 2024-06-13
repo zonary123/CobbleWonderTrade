@@ -1,12 +1,16 @@
 package com.kingpixel.wondertrade.utils;
 
+import com.cobblemon.mod.common.api.events.CobblemonEvents;
+import com.cobblemon.mod.common.api.events.pokemon.PokemonCapturedEvent;
 import com.cobblemon.mod.common.api.pokemon.PokemonPropertyExtractor;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.api.pokemon.stats.Stats;
+import com.cobblemon.mod.common.entity.pokeball.EmptyPokeBallEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
 import com.cobblemon.mod.common.util.LocalizationUtilsKt;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -44,12 +48,20 @@ public class WonderTradeUtil {
     legendarys = new ArrayList<>(sortedSpecies.get(true));
   }
 
+  public static void emiteventcaptured(Pokemon pokemon, Player player) {
+    PokemonCapturedEvent event = new PokemonCapturedEvent(pokemon,
+      Objects.requireNonNull(CobbleWonderTrade.server.getPlayerList().getPlayer(player.getUUID())),
+      new EmptyPokeBallEntity(CobbleWonderTrade.server.overworld())
+    );
+    CobblemonEvents.POKEMON_CAPTURED.emit(event);
+  }
+
   public static void messagePool(List<Pokemon> pokemons) {
     int shinys = (int) pokemons.stream().filter(Pokemon::getShiny).count();
     int legendaries = (int) pokemons.stream().filter(Pokemon::isLegendary).count();
     int total = pokemons.size();
 
-    CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> player.sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getMessagepoolwondertrade()
+    CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessagepoolwondertrade()
       .replace("%shinys%", String.valueOf(shinys))
       .replace("%legends%", String.valueOf(legendaries))
       .replace("%total%", String.valueOf(total))
@@ -99,7 +111,10 @@ public class WonderTradeUtil {
       return "No cooldown";
     }
 
-    long diffInMillies = Math.abs(userDate.getTime() - new Date().getTime());
+    long diffInMillies = userDate.getTime() - new Date().getTime();
+    if (diffInMillies < 0) {
+      return "00:00";
+    }
     long diffInSeconds = TimeUnit.SECONDS.convert(diffInMillies, TimeUnit.MILLISECONDS);
     long hours = diffInSeconds / 3600;
     long minutes = (diffInSeconds % 3600) / 60;
@@ -125,8 +140,8 @@ public class WonderTradeUtil {
     }
     lore.addAll(l);
     lore.replaceAll(s -> s.replace("%level%", String.valueOf(pokemon.getLevel()))
-      .replace("%shiny%", pokemon.getShiny() ? "Si" : "No")
-      .replace("%legends%", pokemon.isLegendary() ? "Si" : "No")
+      .replace("%shiny%", pokemon.getShiny() ? CobbleWonderTrade.language.getYes() : CobbleWonderTrade.language.getNo())
+      .replace("%legends%", pokemon.isLegendary() ? CobbleWonderTrade.language.getYes() : CobbleWonderTrade.language.getNo())
       .replace("%nature%",
         LocalizationUtilsKt.lang(pokemon.getNature().getDisplayName().replace("cobblemon.", "")).getString())
       .replace("%ability%",

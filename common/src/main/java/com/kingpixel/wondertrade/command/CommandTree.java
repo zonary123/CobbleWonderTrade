@@ -5,7 +5,7 @@ import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.base.CommandWonderTrade;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradeOther;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradePool;
-import com.kingpixel.wondertrade.utils.TextUtil;
+import com.kingpixel.wondertrade.utils.AdventureTranslator;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -45,7 +45,7 @@ public class CommandTree {
         .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
         .executes(context -> {
           CobbleWonderTrade.load();
-          Objects.requireNonNull(context.getSource().getPlayer()).sendSystemMessage(TextUtil.parseHexCodes(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
+          Objects.requireNonNull(context.getSource().getPlayer()).sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
           return 1;
         })));
 

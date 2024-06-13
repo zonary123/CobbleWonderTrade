@@ -152,7 +152,7 @@ public abstract class Utils {
     MinecraftServer server = CobbleWonderTrade.server;
     ArrayList<ServerPlayer> players = new ArrayList<>(server.getPlayerList().getPlayers());
     for (ServerPlayer pl : players) {
-      pl.sendSystemMessage(TextUtil.parseHexCodes(message));
+      pl.sendSystemMessage(AdventureTranslator.toNative(message));
     }
   }
 

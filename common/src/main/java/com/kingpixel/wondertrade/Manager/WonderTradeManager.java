@@ -86,6 +86,7 @@ public class WonderTradeManager {
     return oldPokemon;
   }
 
+
   public boolean hasCooldownEnded(Entity player) {
     UserInfo userDate = userInfo.get(player.getUUID());
     if (userDate == null) {

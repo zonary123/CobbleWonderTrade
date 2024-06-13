@@ -38,7 +38,7 @@ public class Config {
     sizePool = 50;
     minlvreq = 5;
     minlv = 5;
-    maxlv = 50;
+    maxlv = 36;
     shinyrate = 8192;
     legendaryrate = 16512;
     shinys = 0;

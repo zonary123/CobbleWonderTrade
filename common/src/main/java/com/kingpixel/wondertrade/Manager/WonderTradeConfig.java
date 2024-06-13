@@ -1,4 +1,4 @@
-package com.kingpixel.wondertrade.Config;
+package com.kingpixel.wondertrade.Manager;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
