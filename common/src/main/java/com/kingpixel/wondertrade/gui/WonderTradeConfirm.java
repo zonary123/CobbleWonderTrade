@@ -1,4 +1,4 @@
-package com.kingpixel.wondertrade.ui;
+package com.kingpixel.wondertrade.gui;
 
 import ca.landonjw.gooeylibs2.api.UIManager;
 import ca.landonjw.gooeylibs2.api.button.GooeyButton;
@@ -75,7 +75,7 @@ public class WonderTradeConfirm {
     return page;
   }
 
-  private static boolean trade(Player player, int index) throws NoPokemonStoreException {
+  public static boolean trade(Player player, int index) throws NoPokemonStoreException {
     if (!CobbleWonderTrade.manager.hasCooldownEnded(player)) {
       player.sendSystemMessage(AdventureTranslator.toNative("&cYou must wait before trading again!"));
       return false;
@@ -85,6 +85,8 @@ public class WonderTradeConfirm {
     Pokemon pokemonplayer = partyStorageSlot.get(index);
     Pokemon pokemongive;
     if (pokemonplayer == null) {
+      player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessageNoPokemonSlot()
+        .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
 

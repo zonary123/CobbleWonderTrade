@@ -3,7 +3,7 @@ package com.kingpixel.wondertrade.command.admin;
 import ca.landonjw.gooeylibs2.api.UIManager;
 import com.cobblemon.mod.common.api.storage.NoPokemonStoreException;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.ui.WonderTrade;
+import com.kingpixel.wondertrade.gui.WonderTrade;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;

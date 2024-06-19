@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.Model.ItemModel;
 import com.kingpixel.wondertrade.utils.Utils;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -11,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author Carlos Varas Alonso - 28/04/2024 23:58
  */
-
+@Getter
 public class Lang {
   private String prefix;
   private String reload;
@@ -22,6 +23,7 @@ public class Lang {
   private String messagepoolwondertrade;
   private String messagewondertradeready;
   private String messagewondertraderecieved;
+  private String messageNoPokemonSlot;
   private String fill;
   private String yes;
   private String no;
@@ -56,6 +58,7 @@ public class Lang {
       "&6/wt &ato trade a pokemon! \n There are %shinys% shinys and %legends% legendaries!";
     messagewondertradeready = "%prefix% &aWonderTrade is ready!";
     messagewondertraderecieved = "%prefix% &aYou have received a %pokemon% pokemon!";
+    messageNoPokemonSlot = "%prefix% &cYou don't have any pokemon in this slot!";
     fill = "minecraft:gray_stained_glass_pane";
     colorhexnamepoke = "<gradient:#ff7900:#ffdbba>%pokemon%</gradient>";
     notallowshiny = "<gradient:#db2e2e:#e68c8c>You can't trade shiny pokemon!";
@@ -99,113 +102,6 @@ public class Lang {
         ""));
   }
 
-  public String getYes() {
-    return yes;
-  }
-
-  public String getNo() {
-    return no;
-  }
-
-  public ItemModel getItemnotallowpokemon() {
-    return itemnotallowpokemon;
-  }
-
-  public String getMessagewondertraderecieved() {
-    return messagewondertraderecieved;
-  }
-
-  public String getMessagewondertradeready() {
-    return messagewondertradeready;
-  }
-
-  public ItemModel getItemnotallowshiny() {
-    return itemnotallowshiny;
-  }
-
-  public ItemModel getItemnotallowlegendary() {
-    return itemnotallowlegendary;
-  }
-
-  public ItemModel getItempreviouspage() {
-    return itempreviouspage;
-  }
-
-  public List<String> getLorepokemon() {
-    return lorepokemon;
-  }
-
-  public ItemModel getItemnextpage() {
-    return itemnextpage;
-  }
-
-  public ItemModel getItemclose() {
-    return itemclose;
-  }
-
-  public String getPrefix() {
-    return prefix;
-  }
-
-  public String getReload() {
-    return reload;
-  }
-
-  public String getMessage() {
-    return message;
-  }
-
-  public String getMessagepoolwondertrade() {
-    return messagepoolwondertrade;
-  }
-
-  public String getFill() {
-    return fill;
-  }
-
-  public String getColorhexnamepoke() {
-    return colorhexnamepoke;
-  }
-
-  public String getDonthavelevel() {
-    return donthavelevel;
-  }
-
-  public ItemModel getInfo() {
-    return info;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public String getTitleconfirm() {
-    return titleconfirm;
-  }
-
-  public ItemModel getNopokemon() {
-    return nopokemon;
-  }
-
-  public ItemModel getConfirm() {
-    return confirm;
-  }
-
-  public ItemModel getCancel() {
-    return cancel;
-  }
-
-  public String getNotallowshiny() {
-    return notallowshiny;
-  }
-
-  public String getNotallowlegendary() {
-    return notallowlegendary;
-  }
-
-  public String getTitlepool() {
-    return titlepool;
-  }
 
   public void init() {
     CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.path + "lang/", CobbleWonderTrade.config.getLang() + ".json",
@@ -239,6 +135,7 @@ public class Lang {
         itemnotallowlegendary = lang.getItemnotallowlegendary();
         messagewondertradeready = lang.getMessagewondertradeready();
         messagewondertraderecieved = lang.getMessagewondertraderecieved();
+        messageNoPokemonSlot = lang.getMessageNoPokemonSlot();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path + "lang/", CobbleWonderTrade.config.getLang() + ".json",
           data);

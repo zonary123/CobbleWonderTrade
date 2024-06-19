@@ -2,7 +2,7 @@ package com.kingpixel.wondertrade.command.base;
 
 import ca.landonjw.gooeylibs2.api.UIManager;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.ui.WonderTradePool;
+import com.kingpixel.wondertrade.gui.WonderTradePool;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;

@@ -5,12 +5,15 @@ import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.base.CommandWonderTrade;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradeOther;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradePool;
+import com.kingpixel.wondertrade.gui.WonderTradeConfirm;
 import com.kingpixel.wondertrade.utils.AdventureTranslator;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.Objects;
 
@@ -53,6 +56,39 @@ public class CommandTree {
       dispatcher.register(base.then(Commands.literal("pool")
         .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
         .executes(new CommandWonderTradePool())));
+
+      // /wt <slot>
+      dispatcher.register(
+        base.then(
+          Commands.argument("slot", IntegerArgumentType.integer(1, 6))
+            .suggests(
+              (context, builder) -> {
+                for (int i = 1; i <= 6; i++) {
+                  builder.suggest(String.valueOf(i));
+                }
+                return builder.buildFuture();
+              }
+            )
+            .then(
+              Commands.literal("confirm")
+                .executes(
+                  context -> {
+                    Player player = context.getSource().getPlayer();
+                    if (player == null) return 0;
+                    Integer slot = IntegerArgumentType.getInteger(context, "slot");
+                    slot--;
+                    if (slot < 0 || slot > 5) return 0;
+                    try {
+                      WonderTradeConfirm.trade(player, slot);
+                    } catch (Exception e) {
+                      e.printStackTrace();
+                    }
+                    return 1;
+                  }
+                )
+            )
+        )
+      );
     }
   }
 }

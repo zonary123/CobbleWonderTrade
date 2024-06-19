@@ -1,4 +1,4 @@
-package com.kingpixel.wondertrade.ui;
+package com.kingpixel.wondertrade.gui;
 
 import ca.landonjw.gooeylibs2.api.UIManager;
 import ca.landonjw.gooeylibs2.api.button.Button;

@@ -11,6 +11,8 @@ dependencies {
     modImplementation "dev.architectury:architectury:$rootProject.architectury_api_version"
     modImplementation("ca.landonjw.gooeylibs:api:${rootProject.gooeylibs_version}")
     modImplementation("com.cobblemon:mod:${rootProject.cobblemon_version}")
+    implementation("org.projectlombok:lombok:1.18.20")
+    annotationProcessor("org.projectlombok:lombok:1.18.20")
     modImplementation(List.of(
             "net.kyori:examination-api:1.3.0",
             "net.kyori:examination-string:1.3.0",
