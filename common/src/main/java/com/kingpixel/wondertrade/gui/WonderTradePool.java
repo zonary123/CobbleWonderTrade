@@ -13,6 +13,8 @@ import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.cobblemon.mod.common.api.storage.NoPokemonStoreException;
 import com.cobblemon.mod.common.item.PokemonItem;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.kingpixel.cobbleutils.CobbleUtils;
+import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.utils.AdventureTranslator;
 import com.kingpixel.wondertrade.utils.Utils;
@@ -87,9 +89,9 @@ public class WonderTradePool {
     try {
       GooeyButton pokemonButton = GooeyButton.builder()
         .display(PokemonItem.from(p))
-        .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getColorhexnamepoke().replace("%pokemon%",
-          p.getSpecies().getName())))
-        .lore(Component.class, AdventureTranslator.toNativeL(WonderTradeUtil.formatPokemonLore(p)))
+        .title(AdventureTranslator.toNative(PokemonUtils.replace(CobbleUtils.language.getPokemonnameformat(), p)))
+        .lore(Component.class,
+          AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleUtils.language.getLorepokemon(), p)))
         .build();
       return pokemonButton;
     } catch (Exception e) {

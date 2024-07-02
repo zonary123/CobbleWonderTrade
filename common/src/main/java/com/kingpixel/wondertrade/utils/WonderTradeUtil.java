@@ -20,31 +20,34 @@ import java.util.stream.Collectors;
  * @author Carlos Varas Alonso - 26/05/2024 4:23
  */
 public class WonderTradeUtil {
-  public static ArrayList<Species> pokemons;
-  public static ArrayList<Species> legendarys;
+  public static ArrayList<Species> pokemons = new ArrayList<>();
+  public static ArrayList<Species> legendarys = new ArrayList<>();
 
   public static void init() {
     Collection<Species> species = PokemonSpecies.INSTANCE.getSpecies();
     Set<String> pokeBlacklist = new HashSet<>(CobbleWonderTrade.config.getPokeblacklist());
 
-    Map<Boolean, List<Species>> sortedSpecies = species.stream()
+    // Primero filtramos los Pokémon que no deben estar en la lista principal
+    List<Species> filteredSpecies = species.stream()
       .filter(species1 -> species1.getNationalPokedexNumber() != 9999)
-      .filter(species1 -> !pokeBlacklist.contains(species1.getName().replace(" ", "").replace("-", "").replace(":",
-        "").replace(".", "").trim()))
-      .filter(species1 -> {
-        Pokemon p = new Pokemon();
-        p.setSpecies(species1);
-        double rarity = CobbleWonderTrade.spawnRates.getRarity(p);
-        return p.isLegendary() || rarity >= 0;
-      })
+      .filter(species1 -> !pokeBlacklist.contains(species1.showdownId()))
       .sorted(Comparator.comparingInt(Species::getNationalPokedexNumber))
+      .toList();
+
+    // Luego particionamos en legendarios y no legendarios
+    Map<Boolean, List<Species>> sortedSpecies = filteredSpecies.stream()
       .collect(Collectors.partitioningBy(species1 -> {
         Pokemon p = new Pokemon();
         p.setSpecies(species1);
-        return p.isLegendary();
+        boolean isLegendary = p.isLegendary() || CobbleWonderTrade.config.getLegends().contains(species1.showdownId());
+        return isLegendary;
       }));
 
-    pokemons = new ArrayList<>(sortedSpecies.get(false));
+    // Filtramos los no legendarios con rareza -1
+    pokemons = new ArrayList<>(sortedSpecies.get(false).stream()
+      .filter(species1 -> CobbleWonderTrade.spawnRates.getRarity(species1) != -1)
+      .toList());
+
     legendarys = new ArrayList<>(sortedSpecies.get(true));
   }
 
@@ -58,14 +61,17 @@ public class WonderTradeUtil {
 
   public static void messagePool(List<Pokemon> pokemons) {
     int shinys = (int) pokemons.stream().filter(Pokemon::getShiny).count();
-    int legendaries = (int) pokemons.stream().filter(Pokemon::isLegendary).count();
+    int legendaries =
+      (int) pokemons.stream()
+        .filter(pokemon -> pokemon.isLegendary() || CobbleWonderTrade.config.getLegends().contains(pokemon.showdownId()))
+        .count();
     int total = pokemons.size();
 
-    CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessagepoolwondertrade()
+    Utils.broadcastMessage(CobbleWonderTrade.language.getMessagepoolwondertrade()
       .replace("%shinys%", String.valueOf(shinys))
       .replace("%legends%", String.valueOf(legendaries))
       .replace("%total%", String.valueOf(total))
-      .replace("%prefix%", CobbleWonderTrade.language.getPrefix()))));
+      .replace("%prefix%", CobbleWonderTrade.language.getPrefix()));
 
   }
 
@@ -74,13 +80,12 @@ public class WonderTradeUtil {
   public static Pokemon getRandomPokemon() {
     Pokemon pokemon = new Pokemon();
     pokemon.createPokemonProperties(PokemonPropertyExtractor.ALL);
-    List<Pokemon> listpokemons = CobbleWonderTrade.manager.getPokemonList();
 
     int shinyR = RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
     int legendaryR = RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
 
     Set<String> generatedPokemonNames = new HashSet<>();
-    listpokemons.forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().getName()));
+    CobbleWonderTrade.manager.getPokemonList().forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().showdownId()));
 
     do {
       if (shinyR == 0) {
@@ -97,9 +102,9 @@ public class WonderTradeUtil {
           pokemon.setShiny(true);
         }
       }
-    } while (generatedPokemonNames.contains(pokemon.getSpecies().getName()));
+    } while (generatedPokemonNames.contains(pokemon.getSpecies().showdownId()));
 
-    generatedPokemonNames.add(pokemon.getSpecies().getName());
+    generatedPokemonNames.add(pokemon.getSpecies().showdownId());
     pokemon.setLevel(RANDOM.nextInt(CobbleWonderTrade.config.getMaxlv() - CobbleWonderTrade.config.getMinlv()) + CobbleWonderTrade.config.getMinlv());
     return pokemon;
   }

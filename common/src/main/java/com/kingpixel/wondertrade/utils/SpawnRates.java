@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.api.spawning.SpawnBucket;
 import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail;
 import com.cobblemon.mod.common.api.spawning.multiplier.WeightMultiplier;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.cobblemon.mod.common.pokemon.Species;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -109,5 +110,11 @@ public class SpawnRates {
   public float getRarity(Pokemon pokemon) {
     return rarity.get(pokemon.getDisplayName().getString()) == null ? -1 :
       rarity.get(pokemon.getDisplayName().getString());
+  }
+
+  public float getRarity(Species species) {
+    Pokemon p = new Pokemon();
+    p.setSpecies(species);
+    return getRarity(p);
   }
 }

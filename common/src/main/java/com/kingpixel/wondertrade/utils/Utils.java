@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-
 public abstract class Utils {
   public static CompletableFuture<Boolean> writeFileAsync(String filePath, String filename, String data) {
     CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -40,11 +39,10 @@ public abstract class Utils {
     }
 
     try (AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(
-      path,
-      StandardOpenOption.WRITE,
-      StandardOpenOption.CREATE,
-      StandardOpenOption.TRUNCATE_EXISTING
-    )) {
+        path,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING)) {
       ByteBuffer buffer = ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8));
 
       fileChannel.write(buffer, 0, buffer, new CompletionHandler<Integer, ByteBuffer>() {
@@ -72,7 +70,6 @@ public abstract class Utils {
     return future;
   }
 
-
   public static boolean writeFileSync(File file, String data) {
     try {
       FileWriter writer = new FileWriter(file);
@@ -86,9 +83,8 @@ public abstract class Utils {
     }
   }
 
-
   public static CompletableFuture<Boolean> readFileAsync(String filePath, String filename,
-                                                         Consumer<String> callback) {
+      Consumer<String> callback) {
     CompletableFuture<Boolean> future = new CompletableFuture<>();
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -138,7 +134,8 @@ public abstract class Utils {
       callback.accept(data);
       return true;
     } catch (Exception e) {
-      CobbleWonderTrade.LOGGER.fatal("Unable to read file " + file.getName() + " for " + CobbleWonderTrade.MOD_ID + ".\nStack Trace: ");
+      CobbleWonderTrade.LOGGER
+          .fatal("Unable to read file " + file.getName() + " for " + CobbleWonderTrade.MOD_ID + ".\nStack Trace: ");
       e.printStackTrace();
       return false;
     }

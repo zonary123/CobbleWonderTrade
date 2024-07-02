@@ -78,7 +78,7 @@ public class CobbleWonderTrade {
 
     ScheduledFuture<?> broadcastTask = scheduler.scheduleAtFixedRate(() -> {
       if (server != null) {
-        server.getPlayerList().getPlayers().forEach(player -> WonderTradeUtil.messagePool(manager.getPokemonList()));
+        WonderTradeUtil.messagePool(manager.getPokemonList());
       }
     }, CobbleWonderTrade.config.getCooldownmessage(), CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
     tasks.add(broadcastTask);
@@ -94,7 +94,7 @@ public class CobbleWonderTrade {
           }
         });
       }
-    }, 0, 1, TimeUnit.MINUTES);
+    }, 0, 30, TimeUnit.SECONDS);
     tasks.add(playerCheckTask);
   }
 }
