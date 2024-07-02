@@ -15,7 +15,21 @@ public class WonderTradeManager {
   private HashMap<UUID, UserInfo> userInfo;
   private List<Pokemon> pokemonList;
 
-  public class UserInfo {
+  public CharSequence getCooldown(UUID uuid) {
+    UserInfo userInfo = this.userInfo.get(uuid);
+
+    Date now = new Date();
+
+    long diff = userInfo.getDate().getTime() - now.getTime();
+    long diffSeconds = diff / 1000 % 60;
+    long diffMinutes = diff / (60 * 1000) % 60;
+    long diffHours = diff / (60 * 60 * 1000) % 24;
+    long diffDays = diff / (24 * 60 * 60 * 1000);
+
+    return String.format("%d days, %d hours, %d minutes, %d seconds", diffDays, diffHours, diffMinutes, diffSeconds);
+  }
+
+  public static class UserInfo {
     private boolean messagesend;
     private Date date;
 
@@ -56,7 +70,7 @@ public class WonderTradeManager {
 
 
   public void addPlayer(Entity player) {
-    userInfo.put(player.getUUID(), new UserInfo(new Date()));
+    userInfo.putIfAbsent(player.getUUID(), new UserInfo(new Date()));
   }
 
   public void init() {

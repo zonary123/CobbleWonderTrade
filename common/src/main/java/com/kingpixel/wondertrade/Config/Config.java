@@ -2,7 +2,9 @@ package com.kingpixel.wondertrade.Config;
 
 import com.google.gson.Gson;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.Model.ItemModel;
 import com.kingpixel.wondertrade.utils.Utils;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -11,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author Carlos Varas Alonso - 29/04/2024 0:14
  */
+@Getter
 public class Config {
   private String lang;
   private int cooldown;
@@ -19,8 +22,10 @@ public class Config {
   private int minlvreq;
   private int minlv;
   private int maxlv;
+  private boolean emitcapture;
   private boolean allowshiny;
   private boolean allowlegendary;
+  private boolean poolview;
   private int shinyrate;
   private int legendaryrate;
   private int shinys;
@@ -30,6 +35,10 @@ public class Config {
   private List<String> poketradeblacklist;
   private List<String> legends;
   private List<String> aliases;
+  //private Map<String, String> forms;
+  private ItemModel itempreviouspage;
+  private ItemModel itemclose;
+  private ItemModel itemnextpage;
 
   public Config() {
     lang = "en";
@@ -43,6 +52,8 @@ public class Config {
     legendaryrate = 16512;
     shinys = 0;
     legendaries = 0;
+    poolview = false;
+    emitcapture = false;
     israndom = true;
     allowshiny = true;
     allowlegendary = true;
@@ -50,78 +61,11 @@ public class Config {
     poketradeblacklist = List.of("Magikarp");
     legends = List.of("Magikarp");
     aliases = List.of("wt", "wondertrade");
-  }
-
-  public String getLang() {
-    return lang;
-  }
-
-  public List<String> getLegends() {
-    return legends;
-  }
-
-  public int getMinlvreq() {
-    return minlvreq;
-  }
-
-  public List<String> getPoketradeblacklist() {
-    return poketradeblacklist;
-  }
-
-  public int getCooldownmessage() {
-    return cooldownmessage;
-  }
-
-  public int getMinlv() {
-    return minlv;
-  }
-
-  public int getMaxlv() {
-    return maxlv;
-  }
-
-  public int getCooldown() {
-    return cooldown;
-  }
-
-  public int getSizePool() {
-    return sizePool;
-  }
-
-  public int getShinys() {
-    return shinys;
-  }
-
-  public int getLegendaries() {
-    return legendaries;
-  }
-
-  public boolean isIsrandom() {
-    return israndom;
-  }
-
-  public int getShinyrate() {
-    return shinyrate;
-  }
-
-  public int getLegendaryrate() {
-    return legendaryrate;
-  }
-
-  public List<String> getPokeblacklist() {
-    return pokeblacklist;
-  }
-
-  public List<String> getAliases() {
-    return aliases;
-  }
-
-  public boolean isAllowshiny() {
-    return allowshiny;
-  }
-
-  public boolean isAllowlegendary() {
-    return allowlegendary;
+    //forms = Map.of("hisui", "&f(&eHisuian&f)");
+    itempreviouspage = new ItemModel("minecraft:arrow", "&7Previous Page", List.of("&7Click to go to the previous " +
+      "page"));
+    itemnextpage = new ItemModel("minecraft:arrow", "&7Next Page", List.of("&7Click to go to the next page"));
+    itemclose = new ItemModel("minecraft:barrier", "&cClose", List.of("&7Click to close the menu"));
   }
 
   public void init() {
@@ -133,6 +77,7 @@ public class Config {
         cooldown = config.getCooldown();
         cooldownmessage = config.getCooldownmessage();
         sizePool = config.getSizePool();
+        emitcapture = config.isEmitcapture();
         minlvreq = config.getMinlvreq();
         minlv = config.getMinlv();
         maxlv = config.getMaxlv();
@@ -147,6 +92,11 @@ public class Config {
         allowlegendary = config.isAllowlegendary();
         legends = config.getLegends();
         poketradeblacklist = config.getPoketradeblacklist();
+        // forms = config.getForms();
+        poolview = config.isPoolview();
+        itempreviouspage = config.getItempreviouspage();
+        itemclose = config.getItemclose();
+        itemnextpage = config.getItemnextpage();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path, "config.json",
           data);

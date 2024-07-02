@@ -19,14 +19,20 @@ public class Lang {
   private String title;
   private String titleconfirm;
   private String titlepool;
+  private String titlePc;
   private String message;
   private String messagepoolwondertrade;
   private String messagewondertradeready;
   private String messagewondertraderecieved;
+  private String messagewondertradecooldown;
+  private String messagePokemonTradeBlackList;
   private String messageNoPokemonSlot;
+  private String messageNoPoolView;
+  private String messagePokemonToWondertrade;
   private String fill;
   private String yes;
   private String no;
+  private String symbolShiny;
   private String colorhexnamepoke;
   private String donthavelevel;
   private String notallowshiny;
@@ -41,6 +47,7 @@ public class Lang {
   private ItemModel itemnotallowpokemon;
   private ItemModel itemnotallowshiny;
   private ItemModel itemnotallowlegendary;
+  private ItemModel Pc;
   private List<String> lorepokemon;
 
   public Lang() {
@@ -48,21 +55,27 @@ public class Lang {
     reload = "%prefix% &aReloaded!";
     title = "<gradient:#ff7900:#ffdbba>WonderTrade";
     titlepool = "&6WonderTrade Pool";
+    titlePc = "§bPC";
     titleconfirm = "<gradient:#ff7900:#ffdbba>Confirm";
     yes = "&aYes";
     no = "&cNo";
-    message = "%prefix% &aYou have received a &6%pokemon%&a!";
-    messagepoolwondertrade = "%prefix% &aThere are currently &e%total% &cpokemons &ain the WonderTrade pool! \n " +
+    message = "%prefix% &aYou have received a %name% %gender% %form% %shiny%&a!";
+    symbolShiny = "&e⭐";
+    messagepoolwondertrade = "%prefix% &aThere are currently &e%total% &cpokemons &ain the WonderTrade pool! \n" +
       "%prefix% " +
       "&aUse " +
-      "&6/wt &ato trade a pokemon! \n There are %shinys% shinys and %legends% legendaries!";
+      "&6/wt &ato trade a pokemon! \nThere are &6%shinys% &eshinys &aand &6%legends% &dlegendaries!";
+    messageNoPoolView = "%prefix% &cThe pool view is disabled!";
     messagewondertradeready = "%prefix% &aWonderTrade is ready!";
-    messagewondertraderecieved = "%prefix% &aYou have received a %pokemon% pokemon!";
+    messagewondertraderecieved = "%prefix% &aYou have received a &6%name% %gender% &f(&b%form%&f) %shiny%&a!";
     messageNoPokemonSlot = "%prefix% &cYou don't have any pokemon in this slot!";
+    messagePokemonTradeBlackList = "%prefix% &cYou can't trade this pokemon %pokemon%!";
     fill = "minecraft:gray_stained_glass_pane";
     colorhexnamepoke = "<gradient:#ff7900:#ffdbba>%pokemon%</gradient>";
     notallowshiny = "<gradient:#db2e2e:#e68c8c>You can't trade shiny pokemon!";
     notallowlegendary = "<gradient:#db2e2e:#e68c8c>You can't trade legendary pokemon!";
+    messagePokemonToWondertrade = "%prefix% &aThe player &6%player% &ahas introduced &6%pokemon% &f(&b%form%&f) " +
+      "%shiny%";
     info = new ItemModel("minecraft:book", "<gradient:#ff7900:#ffdbba>Info WonderTrade", List.of("&7Shinys: &e%shinys%",
       "&7Legendaries: &e%legends%", "&7Time: &e%time%"));
     nopokemon = new ItemModel("cobblemon:poke_ball", "<gradient:#db2e2e:#e68c8c>Empty slot", List.of(""));
@@ -72,26 +85,11 @@ public class Lang {
     cancel = new ItemModel("minecraft:red_stained_glass_pane", "<gradient:#db2e2e:#e68c8c>Cancel", List.of(""));
     itempreviouspage = new ItemModel("minecraft:arrow", "&7Previous Page", List.of("&7Click to go to the previous " +
       "page"));
+    messagewondertradecooldown = "&cYou must wait before trading again %time%!";
     itemnextpage = new ItemModel("minecraft:arrow", "&7Next Page", List.of("&7Click to go to the next page"));
     itemclose = new ItemModel("minecraft:barrier", "&cClose", List.of("&7Click to close the menu"));
-    lorepokemon = List.of("&7Click to select this pokemon",
-      "&8Level: &f%level%",
-      "&eShiny: &f%shiny%",
-      "&5Legendario: &f%legends%",
-      "&eNature: &f%nature%",
-      "&6Ability: &f%ability%",
-      "&dIVs:",
-      "  &cHP: &f%hp% &9Atk: &f%atk%  &7Def: &f%def%",
-      "  &bSpAtk: &f%spa% &eSpDef: &f%spd% &aSpd: &f%spe%",
-      "&3EVs:",
-      "  &cHP: &f%evhp% &9Atk: &f%evatk%  &7Def: &f%evdef%",
-      "  &bSpAtk: &f%evspa% &eSpDef: &f%evspd% &aSpd: &f%evspe%",
-      "&2Moves:",
-      "  &f%move1%",
-      "  &f%move2%",
-      "  &f%move3%",
-      "  &f%move4%",
-      "&6Form: %form%");
+    Pc = new ItemModel("cobblemon:pc", "<gradient:#ff7900:#ffdbba>PC", List.of("&7Click to open the PC"));
+    lorepokemon = List.of("&7Click to select this pokemon");
     donthavelevel = "<gradient:#db2e2e:#e68c8c>You don't have a pokemon with level %minlevel%!</gradient>";
     itemnotallowpokemon = new ItemModel("cobblemon:net_ball", "<gradient:#db2e2e:#e68c8c>Not allow pokemon", List.of(
       ""));
@@ -118,16 +116,19 @@ public class Lang {
         colorhexnamepoke = lang.getColorhexnamepoke();
         info = lang.getInfo();
         title = lang.getTitle();
+        titlePc = lang.getTitlePc();
         titleconfirm = lang.getTitleconfirm();
         titlepool = lang.getTitlepool();
         nopokemon = lang.getNopokemon();
         confirm = lang.getConfirm();
         cancel = lang.getCancel();
+        messagePokemonToWondertrade = lang.getMessagePokemonToWondertrade();
         itempreviouspage = lang.getItempreviouspage();
         itemnextpage = lang.getItemnextpage();
         itemclose = lang.getItemclose();
         lorepokemon = lang.getLorepokemon();
         donthavelevel = lang.getDonthavelevel();
+        symbolShiny = lang.getSymbolShiny();
         notallowshiny = lang.getNotallowshiny();
         notallowlegendary = lang.getNotallowlegendary();
         itemnotallowpokemon = lang.getItemnotallowpokemon();
@@ -135,7 +136,11 @@ public class Lang {
         itemnotallowlegendary = lang.getItemnotallowlegendary();
         messagewondertradeready = lang.getMessagewondertradeready();
         messagewondertraderecieved = lang.getMessagewondertraderecieved();
+        messagewondertradecooldown = lang.getMessagewondertradecooldown();
         messageNoPokemonSlot = lang.getMessageNoPokemonSlot();
+        messagePokemonTradeBlackList = lang.getMessagePokemonTradeBlackList();
+        messageNoPoolView = lang.getMessageNoPoolView();
+        Pc = lang.getPc();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path + "lang/", CobbleWonderTrade.config.getLang() + ".json",
           data);

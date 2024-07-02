@@ -1,5 +1,6 @@
 package com.kingpixel.wondertrade.utils;
 
+import com.kingpixel.wondertrade.CobbleWonderTrade;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
@@ -18,7 +19,8 @@ public class AdventureTranslator {
 
 
   public static Component toNative(String displayname) {
-    return toNative(miniMessage.deserialize(replaceNative(displayname)));
+    return toNative(miniMessage.deserialize(replaceNative(displayname
+      .replace("%prefix%", CobbleWonderTrade.language.getPrefix()))));
   }
 
   public static Component toNative(net.kyori.adventure.text.Component component) {

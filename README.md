@@ -46,6 +46,7 @@ help to improve the plugin.
 ## Commands
 
 - `/wt` - Opens the WonderTrade GUI.
+- `/wt pc` - Opens the WonderTrade PC GUI.
 - `/wt other <player>` - Opens the WonderTrade GUI for other player.
 - `/wt pool` - Opens the WonderTrade pool GUI.
 - `/wt reload` - Reloads the plugin configuration.
