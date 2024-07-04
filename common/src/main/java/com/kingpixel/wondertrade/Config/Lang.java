@@ -102,7 +102,7 @@ public class Lang {
 
 
   public void init() {
-    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.path + "lang/", CobbleWonderTrade.config.getLang() + ".json",
+    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",
       el -> {
         Gson gson = Utils.newGson();
         Lang lang = gson.fromJson(el, Lang.class);
@@ -142,7 +142,7 @@ public class Lang {
         messageNoPoolView = lang.getMessageNoPoolView();
         Pc = lang.getPc();
         String data = gson.toJson(this);
-        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path + "lang/", CobbleWonderTrade.config.getLang() + ".json",
+        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",
           data);
         if (!futureWrite.join()) {
           CobbleWonderTrade.LOGGER.fatal("Could not write lang.json file for CobbleHunt.");
@@ -153,7 +153,7 @@ public class Lang {
       CobbleWonderTrade.LOGGER.info("No lang.json file found for" + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
       Gson gson = Utils.newGson();
       String data = gson.toJson(this);
-      CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path + "lang/", CobbleWonderTrade.config.getLang() + ".json",
+      CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",
         data);
 
       if (!futureWrite.join()) {

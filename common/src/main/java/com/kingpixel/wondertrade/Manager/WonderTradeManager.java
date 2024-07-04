@@ -1,16 +1,23 @@
 package com.kingpixel.wondertrade.Manager;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.google.gson.Gson;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.utils.Utils;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
+import lombok.Getter;
+import lombok.ToString;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author Carlos Varas Alonso - 29/04/2024 1:31
  */
+@Getter
+@ToString
 public class WonderTradeManager {
   private HashMap<UUID, UserInfo> userInfo;
   private List<Pokemon> pokemonList;
@@ -29,39 +36,6 @@ public class WonderTradeManager {
     return String.format("%d days, %d hours, %d minutes, %d seconds", diffDays, diffHours, diffMinutes, diffSeconds);
   }
 
-  public static class UserInfo {
-    private boolean messagesend;
-    private Date date;
-
-    public UserInfo(Date date) {
-      this.date = date;
-      this.messagesend = false;
-    }
-
-    public boolean isMessagesend() {
-      return messagesend;
-    }
-
-    public Date getDate() {
-      return date;
-    }
-
-    public void setMessagesend(boolean messagesend) {
-      this.messagesend = messagesend;
-    }
-
-    public void setDate(Date date) {
-      this.date = date;
-    }
-  }
-
-  public HashMap<UUID, UserInfo> getUserInfo() {
-    return userInfo;
-  }
-
-  public List<Pokemon> getPokemonList() {
-    return pokemonList;
-  }
 
   public WonderTradeManager() {
     userInfo = new HashMap<>();
@@ -74,8 +48,46 @@ public class WonderTradeManager {
   }
 
   public void init() {
+    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
+      el -> {
+        Gson gson = Utils.newGson();
+        WonderTradeManager manager = gson.fromJson(el, WonderTradeManager.class);
+        this.pokemonList = manager.getPokemonList();
+        String data = gson.toJson(this);
+        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
+          data);
+        if (!futureWrite.join()) {
+          CobbleWonderTrade.LOGGER.fatal("Could not write lang.json file for CobbleHunt.");
+        }
+      });
+
+    if (!futureRead.join()) {
+      CobbleWonderTrade.LOGGER.info("No config.json file found for" + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
+      Gson gson = Utils.newGson();
+      String data = gson.toJson(this);
+      CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
+        data);
+
+      if (!futureWrite.join()) {
+        CobbleWonderTrade.LOGGER.fatal("Could not write config.json file for CobbleHunt.");
+      }
+    }
+
+    if (pokemonList.isEmpty()) generatePokemonList();
+
     for (ServerPlayer player : CobbleWonderTrade.server.getPlayerList().getPlayers()) {
       addPlayer(player);
+    }
+  }
+
+  public static void writeInfo() {
+    Gson gson = Utils.newGson();
+    String data = gson.toJson(CobbleWonderTrade.manager);
+    CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
+      data);
+
+    if (!futureWrite.join()) {
+      CobbleWonderTrade.LOGGER.fatal("Could not write config.json file for CobbleHunt.");
     }
   }
 
@@ -118,9 +130,29 @@ public class WonderTradeManager {
     return randomPokemon;
   }
 
-  @Override public String toString() {
-    return "WonderTradeManager{" +
-      "userInfo=" + userInfo +
-      '}';
+  public static class UserInfo {
+    private boolean messagesend;
+    private Date date;
+
+    public UserInfo(Date date) {
+      this.date = date;
+      this.messagesend = false;
+    }
+
+    public boolean isMessagesend() {
+      return messagesend;
+    }
+
+    public Date getDate() {
+      return date;
+    }
+
+    public void setMessagesend(boolean messagesend) {
+      this.messagesend = messagesend;
+    }
+
+    public void setDate(Date date) {
+      this.date = date;
+    }
   }
 }

@@ -30,7 +30,8 @@ public class CobbleWonderTrade {
   public static final String MOD_ID = "wondertrade";
   public static final Logger LOGGER = LogManager.getLogger();
   public static final String MOD_NAME = "CobbleWonderTrade";
-  public static final String path = "/config/wondertrade/";
+  public static final String PATH = "/config/wondertrade/";
+  public static final String PATH_DATA = PATH + "data/";
   public static Lang language = new Lang();
   public static MinecraftServer server;
   public static Config config = new Config();
@@ -52,7 +53,6 @@ public class CobbleWonderTrade {
     spawnRates.init();
     manager.init();
     WonderTradeUtil.init();
-    manager.generatePokemonList();
     tasks();
   }
 
@@ -61,6 +61,12 @@ public class CobbleWonderTrade {
     LifecycleEvent.SERVER_STARTED.register(server -> load());
     PlayerEvent.PLAYER_JOIN.register(player -> manager.addPlayer(player));
     LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> server = level.getLevel().getServer());
+    LifecycleEvent.SERVER_STOPPING.register((server) -> {
+      tasks.forEach(task -> task.cancel(true));
+      tasks.clear();
+      LOGGER.info("Stopping " + MOD_NAME);
+    });
+
   }
 
   private static void files() {

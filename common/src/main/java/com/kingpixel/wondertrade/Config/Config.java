@@ -26,6 +26,7 @@ public class Config {
   private boolean allowshiny;
   private boolean allowlegendary;
   private boolean poolview;
+  private boolean savepool;
   private int shinyrate;
   private int legendaryrate;
   private int shinys;
@@ -35,7 +36,6 @@ public class Config {
   private List<String> poketradeblacklist;
   private List<String> legends;
   private List<String> aliases;
-  //private Map<String, String> forms;
   private ItemModel itempreviouspage;
   private ItemModel itemclose;
   private ItemModel itemnextpage;
@@ -52,6 +52,7 @@ public class Config {
     legendaryrate = 16512;
     shinys = 0;
     legendaries = 0;
+    savepool = false;
     poolview = false;
     emitcapture = false;
     israndom = true;
@@ -69,7 +70,7 @@ public class Config {
   }
 
   public void init() {
-    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.path, "config.json",
+    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH, "config.json",
       el -> {
         Gson gson = Utils.newGson();
         Config config = gson.fromJson(el, Config.class);
@@ -97,8 +98,9 @@ public class Config {
         itempreviouspage = config.getItempreviouspage();
         itemclose = config.getItemclose();
         itemnextpage = config.getItemnextpage();
+        savepool = config.isSavepool();
         String data = gson.toJson(this);
-        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path, "config.json",
+        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH, "config.json",
           data);
         if (!futureWrite.join()) {
           CobbleWonderTrade.LOGGER.fatal("Could not write lang.json file for CobbleHunt.");
@@ -109,7 +111,7 @@ public class Config {
       CobbleWonderTrade.LOGGER.info("No config.json file found for" + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
       Gson gson = Utils.newGson();
       String data = gson.toJson(this);
-      CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.path, "config.json",
+      CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH, "config.json",
         data);
 
       if (!futureWrite.join()) {

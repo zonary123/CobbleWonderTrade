@@ -32,8 +32,7 @@ public class WonderTradeConfirm {
     GooeyButton confirm = GooeyButton.builder()
       .display(Utils.parseItemId(CobbleWonderTrade.language.getConfirm().getId()))
       .title(AdventureTranslator.toNative(PokemonUtils.replace(CobbleUtils.language.getPokemonnameformat(), pokemon)))
-      .lore(Component.class, AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleUtils.language.getLorepokemon()
-        , pokemon)))
+      .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getConfirm().getLore()))
       .onClick(action -> {
         try {
           if (trade(action.getPlayer(), pokemon)) {
@@ -49,7 +48,8 @@ public class WonderTradeConfirm {
     GooeyButton pokebutton = GooeyButton.builder()
       .display(PokemonItem.from(pokemon))
       .title(AdventureTranslator.toNative(pokemon.getSpecies().getName()))
-      .lore(Component.class, AdventureTranslator.toNativeL(WonderTradeUtil.formatPokemonLore(pokemon)))
+      .lore(Component.class, AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleUtils.language.getLorepokemon()
+        , pokemon)))
       .build();
 
     GooeyButton cancel = GooeyButton.builder()
@@ -74,7 +74,7 @@ public class WonderTradeConfirm {
       .build();
 
     GooeyPage page =
-      GooeyPage.builder().title(AdventureTranslator.toNative(CobbleWonderTrade.language.getPrefix())).template(template).build();
+      GooeyPage.builder().title(AdventureTranslator.toNative(CobbleWonderTrade.language.getTitleconfirm())).template(template).build();
     return page;
   }
 
@@ -85,6 +85,14 @@ public class WonderTradeConfirm {
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
+    if (pokemonplayer == null) {
+      player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessageNoPokemonSlot()
+        .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
+      return false;
+    }
+    if (pokemonplayer.getShiny() && !CobbleWonderTrade.config.isAllowshiny()) return false;
+    if (pokemonplayer.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) return false;
+    if (pokemonplayer.getLevel() < CobbleWonderTrade.config.getMinlvreq()) return false;
 
     PlayerPartyStore partyStorageSlot = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID());
 
@@ -95,11 +103,7 @@ public class WonderTradeConfirm {
       return false;
     }
     Pokemon pokemongive;
-    if (pokemonplayer == null) {
-      player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessageNoPokemonSlot()
-        .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
-      return false;
-    }
+
 
     if (!CobbleWonderTrade.config.isIsrandom()) {
       pokemongive = CobbleWonderTrade.manager.putPokemon(pokemonplayer);
