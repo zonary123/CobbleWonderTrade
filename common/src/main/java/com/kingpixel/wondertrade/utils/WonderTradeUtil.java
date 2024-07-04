@@ -85,7 +85,11 @@ public class WonderTradeUtil {
     int legendaryR = RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
 
     Set<String> generatedPokemonNames = new HashSet<>();
-    CobbleWonderTrade.manager.getPokemonList().forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().showdownId()));
+    List<Pokemon> arraypokemons = new ArrayList<>();
+    CobbleWonderTrade.manager.getPokemonList().forEach(pokemon1 -> {
+      arraypokemons.add(Pokemon.Companion.loadFromJSON(pokemon1));
+    });
+    arraypokemons.forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().showdownId()));
 
     do {
       if (shinyR == 0) {

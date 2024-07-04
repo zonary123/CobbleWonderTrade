@@ -146,6 +146,20 @@ public class CommandTree {
             )
         )
       );
+
+      // /wt reset
+      dispatcher.register(
+        base
+          .requires(source -> source.hasPermission(2))
+          .then(
+            Commands.literal("reset")
+              .requires(source -> source.hasPermission(2))
+              .executes(context -> {
+                CobbleWonderTrade.manager.generatePokemonList();
+                return 1;
+              })
+          )
+      );
     }
   }
 }

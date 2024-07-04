@@ -2,8 +2,9 @@ package com.kingpixel.wondertrade.Manager;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.utils.Utils;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import lombok.Getter;
 import lombok.ToString;
@@ -20,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
 @ToString
 public class WonderTradeManager {
   private HashMap<UUID, UserInfo> userInfo;
-  private List<Pokemon> pokemonList;
+  private List<JsonObject> pokemonList;
 
   public CharSequence getCooldown(UUID uuid) {
     UserInfo userInfo = this.userInfo.get(uuid);
@@ -48,23 +49,52 @@ public class WonderTradeManager {
   }
 
   public void init() {
-    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
-      el -> {
-        Gson gson = Utils.newGson();
-        WonderTradeManager manager = gson.fromJson(el, WonderTradeManager.class);
-        this.pokemonList = manager.getPokemonList();
-        String data = gson.toJson(this);
-        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
-          data);
-        if (!futureWrite.join()) {
-          CobbleWonderTrade.LOGGER.fatal("Could not write lang.json file for CobbleHunt.");
-        }
-      });
+    if (CobbleWonderTrade.config.isSavepool()) {
+      CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
+        el -> {
+          Gson gson = Utils.newWithoutSpacingGson();
+          WonderTradeManager manager = gson.fromJson(el, WonderTradeManager.class);
+          this.pokemonList = manager.getPokemonList();
+        });
 
-    if (!futureRead.join()) {
-      CobbleWonderTrade.LOGGER.info("No config.json file found for" + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
-      Gson gson = Utils.newGson();
-      String data = gson.toJson(this);
+      futureRead.thenRun(() -> {
+        if (pokemonList.isEmpty()) {
+          generatePokemonList();
+          Gson gson = Utils.newWithoutSpacingGson();
+          String data = gson.toJson(this);
+          CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", data);
+          if (!futureWrite.join()) {
+            CobbleWonderTrade.LOGGER.fatal("Could not write pool.json file for CobbleWonderTrade.");
+          }
+        }
+
+        for (ServerPlayer player : CobbleWonderTrade.server.getPlayerList().getPlayers()) {
+          addPlayer(player);
+        }
+      }).exceptionally(ex -> {
+        CobbleWonderTrade.LOGGER.info("No pool.json file found for " + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
+        generatePokemonList();
+        Gson gson = Utils.newWithoutSpacingGson();
+        String data = gson.toJson(this);
+        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", data);
+        if (!futureWrite.join()) {
+          CobbleWonderTrade.LOGGER.fatal("Could not write pool.json file for CobbleWonderTrade.");
+        }
+        return null;
+      });
+    } else {
+      generatePokemonList();
+      for (ServerPlayer player : CobbleWonderTrade.server.getPlayerList().getPlayers()) {
+        addPlayer(player);
+      }
+    }
+  }
+
+
+  public void writeInfo() {
+    if (CobbleWonderTrade.config.isSavepool()) {
+      Gson gson = Utils.newWithoutSpacingGson();
+      String data = gson.toJson(CobbleWonderTrade.manager);
       CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
         data);
 
@@ -72,30 +102,26 @@ public class WonderTradeManager {
         CobbleWonderTrade.LOGGER.fatal("Could not write config.json file for CobbleHunt.");
       }
     }
-
-    if (pokemonList.isEmpty()) generatePokemonList();
-
-    for (ServerPlayer player : CobbleWonderTrade.server.getPlayerList().getPlayers()) {
-      addPlayer(player);
-    }
   }
 
-  public static void writeInfo() {
-    Gson gson = Utils.newGson();
-    String data = gson.toJson(CobbleWonderTrade.manager);
-    CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
-      data);
-
-    if (!futureWrite.join()) {
-      CobbleWonderTrade.LOGGER.fatal("Could not write config.json file for CobbleHunt.");
+  public void resetPool() {
+    if (pokemonList.size() == CobbleWonderTrade.config.getSizePool()) return;
+    if (pokemonList.size() > CobbleWonderTrade.config.getSizePool()) {
+      pokemonList = pokemonList.subList(0, CobbleWonderTrade.config.getSizePool());
+    } else {
+      for (int i = pokemonList.size(); i < CobbleWonderTrade.config.getSizePool(); i++) {
+        pokemonList.add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
+      }
     }
+    writeInfo();
   }
 
   public void generatePokemonList() {
     pokemonList.clear();
     for (int i = 0; i < CobbleWonderTrade.config.getSizePool(); i++) {
-      pokemonList.add(WonderTradeUtil.getRandomPokemon());
+      pokemonList.add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
     }
+    writeInfo();
   }
 
   public void addPlayerWithDate(Entity player, int minutes) {
@@ -107,8 +133,8 @@ public class WonderTradeManager {
 
   public Pokemon putPokemon(Pokemon pokemon) {
     int randomIndex = new Random().nextInt(pokemonList.size());
-    Pokemon oldPokemon = pokemonList.get(randomIndex);
-    pokemonList.set(randomIndex, pokemon);
+    Pokemon oldPokemon = Pokemon.Companion.loadFromJSON(pokemonList.get(randomIndex));
+    pokemonList.set(randomIndex, pokemon.saveToJSON(new JsonObject()));
     return oldPokemon;
   }
 
@@ -125,8 +151,8 @@ public class WonderTradeManager {
 
   public Pokemon getRandomPokemon() {
     int randomIndex = new Random().nextInt(pokemonList.size());
-    Pokemon randomPokemon = pokemonList.get(randomIndex);
-    pokemonList.set(randomIndex, WonderTradeUtil.getRandomPokemon());
+    Pokemon randomPokemon = Pokemon.Companion.loadFromJSON(pokemonList.get(randomIndex));
+    pokemonList.set(randomIndex, WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
     return randomPokemon;
   }
 

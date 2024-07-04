@@ -59,7 +59,7 @@ public class Lang {
     titleconfirm = "<gradient:#ff7900:#ffdbba>Confirm";
     yes = "&aYes";
     no = "&cNo";
-    message = "%prefix% &aYou have received a %name% %gender% %form% %shiny%&a!";
+    message = "%prefix% &aYou have received a %pokemon% %gender% %form% %shiny%&a!";
     symbolShiny = "&e⭐";
     messagepoolwondertrade = "%prefix% &aThere are currently &e%total% &cpokemons &ain the WonderTrade pool! \n" +
       "%prefix% " +
@@ -67,7 +67,7 @@ public class Lang {
       "&6/wt &ato trade a pokemon! \nThere are &6%shinys% &eshinys &aand &6%legends% &dlegendaries!";
     messageNoPoolView = "%prefix% &cThe pool view is disabled!";
     messagewondertradeready = "%prefix% &aWonderTrade is ready!";
-    messagewondertraderecieved = "%prefix% &aYou have received a &6%name% %gender% &f(&b%form%&f) %shiny%&a!";
+    messagewondertraderecieved = "%prefix% &aYou have received a &6%pokemon% %gender% &f(&b%form%&f) %shiny%&a!";
     messageNoPokemonSlot = "%prefix% &cYou don't have any pokemon in this slot!";
     messagePokemonTradeBlackList = "%prefix% &cYou can't trade this pokemon %pokemon%!";
     fill = "minecraft:gray_stained_glass_pane";

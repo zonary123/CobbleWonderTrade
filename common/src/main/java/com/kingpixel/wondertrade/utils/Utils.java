@@ -3,6 +3,7 @@ package com.kingpixel.wondertrade.utils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.Model.ItemModel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,10 +40,10 @@ public abstract class Utils {
     }
 
     try (AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(
-        path,
-        StandardOpenOption.WRITE,
-        StandardOpenOption.CREATE,
-        StandardOpenOption.TRUNCATE_EXISTING)) {
+      path,
+      StandardOpenOption.WRITE,
+      StandardOpenOption.CREATE,
+      StandardOpenOption.TRUNCATE_EXISTING)) {
       ByteBuffer buffer = ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8));
 
       fileChannel.write(buffer, 0, buffer, new CompletionHandler<Integer, ByteBuffer>() {
@@ -84,7 +85,7 @@ public abstract class Utils {
   }
 
   public static CompletableFuture<Boolean> readFileAsync(String filePath, String filename,
-      Consumer<String> callback) {
+                                                         Consumer<String> callback) {
     CompletableFuture<Boolean> future = new CompletableFuture<>();
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -135,7 +136,7 @@ public abstract class Utils {
       return true;
     } catch (Exception e) {
       CobbleWonderTrade.LOGGER
-          .fatal("Unable to read file " + file.getName() + " for " + CobbleWonderTrade.MOD_ID + ".\nStack Trace: ");
+        .fatal("Unable to read file " + file.getName() + " for " + CobbleWonderTrade.MOD_ID + ".\nStack Trace: ");
       e.printStackTrace();
       return false;
     }
@@ -158,5 +159,18 @@ public abstract class Utils {
     tag.putString("id", id);
     tag.putInt("Count", 1);
     return ItemStack.of(tag);
+  }
+
+  public static ItemStack parseItemModel(ItemModel itemModel) {
+    CompoundTag tag = new CompoundTag();
+    tag.putString("id", itemModel.getItem());
+    tag.putInt("Count", 1);
+    ItemStack itemStack = ItemStack.of(tag);
+    itemStack.getOrCreateTag().putInt("CustomModelData", itemModel.getCustomModelData());
+    return itemStack;
+  }
+
+  public static ItemStack fill() {
+    return parseItemId(CobbleWonderTrade.language.getFill());
   }
 }

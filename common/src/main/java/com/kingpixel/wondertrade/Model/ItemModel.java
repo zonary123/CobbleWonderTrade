@@ -15,6 +15,7 @@ public class ItemModel {
   private int slot;
   private String title;
   private List<String> lore;
+  private int CustomModelData;
 
   public ItemModel() {
   }

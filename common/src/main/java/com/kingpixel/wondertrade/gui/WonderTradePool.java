@@ -18,7 +18,6 @@ import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.utils.AdventureTranslator;
 import com.kingpixel.wondertrade.utils.Utils;
-import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -32,30 +31,35 @@ import java.util.Objects;
  */
 public class WonderTradePool {
   public static Page open() {
-
+    GooeyButton fill = GooeyButton.builder()
+      .display(Utils.fill())
+      .title("")
+      .build();
     List<Button> buttons = new ArrayList<>();
 
-    List<Pokemon> pokemons = CobbleWonderTrade.manager.getPokemonList();
-
+    List<Pokemon> pokemons = new ArrayList<>();
+    CobbleWonderTrade.manager.getPokemonList().forEach(pokemon -> {
+      pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
+    });
     for (Pokemon p : pokemons) {
       GooeyButton pokemonButton = createPokemonButton(p);
       buttons.add(pokemonButton);
     }
 
     LinkedPageButton previus = LinkedPageButton.builder()
-      .display(Utils.parseItemId(CobbleWonderTrade.language.getItempreviouspage().getId()))
+      .display(Utils.parseItemModel(CobbleWonderTrade.language.getItempreviouspage()))
       .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItempreviouspage().getTitle()))
       .linkType(LinkType.Previous)
       .build();
 
     LinkedPageButton next = LinkedPageButton.builder()
-      .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnextpage().getId()))
+      .display(Utils.parseItemModel(CobbleWonderTrade.language.getItemnextpage()))
       .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnextpage().getTitle()))
       .linkType(LinkType.Next)
       .build();
 
     GooeyButton close = GooeyButton.builder()
-      .display(Utils.parseItemId(CobbleWonderTrade.language.getItemclose().getId()))
+      .display(Utils.parseItemModel(CobbleWonderTrade.language.getItemclose()))
       .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemclose().getTitle()))
       .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getItemclose().getLore()))
       .onClick((action) -> {
@@ -72,7 +76,7 @@ public class WonderTradePool {
     LinkedPage.Builder linkedPageBuilder = LinkedPage.builder();
 
     ChestTemplate template = ChestTemplate.builder(6)
-      .fill(GooeyButton.builder().display(new ItemStack(Items.GRAY_STAINED_GLASS_PANE).setHoverName(Component.literal(""))).build())
+      .fill(fill)
       .rectangle(0, 0, 4, 9, placeholder)
       .fillFromList(buttons)
       .set(5, 4, close)

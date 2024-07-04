@@ -1,5 +1,6 @@
 package com.kingpixel.wondertrade;
 
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.wondertrade.Config.Config;
 import com.kingpixel.wondertrade.Config.Lang;
 import com.kingpixel.wondertrade.Manager.WonderTradeConfig;
@@ -51,8 +52,9 @@ public class CobbleWonderTrade {
   public static void load() {
     files();
     spawnRates.init();
-    manager.init();
     WonderTradeUtil.init();
+    manager.init();
+    manager.resetPool();
     tasks();
   }
 
@@ -84,7 +86,11 @@ public class CobbleWonderTrade {
 
     ScheduledFuture<?> broadcastTask = scheduler.scheduleAtFixedRate(() -> {
       if (server != null) {
-        WonderTradeUtil.messagePool(manager.getPokemonList());
+        List<Pokemon> pokemons = new ArrayList<>();
+        manager.getPokemonList().forEach(pokemon -> {
+          pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
+        });
+        WonderTradeUtil.messagePool(pokemons);
       }
     }, CobbleWonderTrade.config.getCooldownmessage(), CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
     tasks.add(broadcastTask);

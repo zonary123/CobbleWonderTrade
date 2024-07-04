@@ -39,21 +39,24 @@ public class WonderTradePC {
         pcStore.forEach((pokemon) -> {
           buttons.add(WonderTrade.createButtonPokemon(pokemon));
         });
-
+        GooeyButton fill = GooeyButton.builder()
+          .display(Utils.fill())
+          .title("")
+          .build();
         LinkedPageButton previus = LinkedPageButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.config.getItempreviouspage().getItem()))
+          .display(Utils.parseItemModel(CobbleWonderTrade.config.getItempreviouspage()))
           .title(AdventureTranslator.toNative(CobbleWonderTrade.config.getItempreviouspage().getTitle()))
           .linkType(LinkType.Previous)
           .build();
 
         LinkedPageButton next = LinkedPageButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.config.getItemnextpage().getItem()))
+          .display(Utils.parseItemModel(CobbleWonderTrade.config.getItemnextpage()))
           .title(AdventureTranslator.toNative(CobbleWonderTrade.config.getItemnextpage().getTitle()))
           .linkType(LinkType.Next)
           .build();
 
         GooeyButton close = GooeyButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.config.getItemclose().getItem()))
+          .display(Utils.parseItemModel(CobbleWonderTrade.config.getItemclose()))
           .title(AdventureTranslator.toNative(CobbleWonderTrade.config.getItemclose().getTitle()))
           .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.config.getItemclose().getLore()))
           .onClick((action) -> {
@@ -66,10 +69,6 @@ public class WonderTradePC {
           .build();
 
         PlaceholderButton placeholder = new PlaceholderButton();
-        GooeyButton fill = GooeyButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.language.getFill())
-            .setHoverName(Component.literal("")))
-          .build();
 
         template.fill(fill)
           .rectangle(0, 0, 5, 9, placeholder)

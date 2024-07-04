@@ -29,12 +29,15 @@ import java.util.concurrent.ExecutionException;
 public class WonderTrade {
   public static GooeyPage open(Player player) throws NoPokemonStoreException {
     try {
-      PlayerPartyStore partyStore = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID());
-
       GooeyButton fill = GooeyButton.builder()
-        .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
+        .display(Utils.fill())
         .title("")
         .build();
+      List<Pokemon> pokemons = new ArrayList<>();
+      CobbleWonderTrade.manager.getPokemonList().forEach(pokemon -> {
+        pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
+      });
+      PlayerPartyStore partyStore = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID());
 
       GooeyButton poke1 = createButtonPokemon(partyStore.get(0));
       GooeyButton poke2 = createButtonPokemon(partyStore.get(1));
@@ -42,12 +45,12 @@ public class WonderTrade {
 
       List<String> loreinfo = new ArrayList<>(CobbleWonderTrade.language.getInfo().getLore());
       loreinfo.replaceAll(s -> s.replace("%time%", WonderTradeUtil.getUserCooldown(player.getUUID()))
-        .replace("%shinys%", CobbleWonderTrade.manager.getPokemonList().stream().filter(Pokemon::getShiny).count() + "")
+        .replace("%shinys%", pokemons.stream().filter(Pokemon::getShiny).count() + "")
         .replace("%legends%",
-          CobbleWonderTrade.manager.getPokemonList().stream().filter(Pokemon::isLegendary).count() + ""));
+          pokemons.stream().filter(Pokemon::isLegendary).count() + ""));
 
       GooeyButton info = GooeyButton.builder()
-        .display(Utils.parseItemId(CobbleWonderTrade.language.getInfo().getId()))
+        .display(Utils.parseItemModel(CobbleWonderTrade.language.getInfo()))
         .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getInfo().getTitle()))
         .lore(Component.class, AdventureTranslator.toNativeL(loreinfo))
         .onClick(action -> {
@@ -61,7 +64,7 @@ public class WonderTrade {
         .build();
 
       GooeyButton pc = GooeyButton.builder()
-        .display(Utils.parseItemId(CobbleWonderTrade.language.getPc().getId()))
+        .display(Utils.parseItemModel(CobbleWonderTrade.language.getPc()))
         .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getPc().getTitle()))
         .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getPc().getLore()))
         .onClick(action -> {
@@ -105,14 +108,14 @@ public class WonderTrade {
     try {
       if (pokemon == null) {
         return GooeyButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.language.getNopokemon().getId()))
+          .display(Utils.parseItemModel(CobbleWonderTrade.language.getNopokemon()))
           .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getNopokemon().getTitle()))
           .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getNopokemon().getLore()))
           .build();
       }
       if (CobbleWonderTrade.config.getPoketradeblacklist().contains(pokemon.showdownId())) {
         return GooeyButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowpokemon().getId()))
+          .display(Utils.parseItemModel(CobbleWonderTrade.language.getItemnotallowpokemon()))
           .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnotallowpokemon().getTitle()))
           .lore(Component.class,
             AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleWonderTrade.language.getItemnotallowpokemon().getLore(), pokemon)))
@@ -121,7 +124,7 @@ public class WonderTrade {
 
       if (pokemon.getShiny() && !CobbleWonderTrade.config.isAllowshiny()) {
         return GooeyButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowshiny().getId()))
+          .display(Utils.parseItemModel(CobbleWonderTrade.language.getItemnotallowshiny()))
           .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnotallowshiny().getTitle()))
           .lore(Component.class,
             AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleWonderTrade.language.getItemnotallowshiny().getLore(),
@@ -131,7 +134,7 @@ public class WonderTrade {
 
       if ((pokemon.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) || CobbleWonderTrade.config.getLegends().contains(pokemon.showdownId())) {
         return GooeyButton.builder()
-          .display(Utils.parseItemId(CobbleWonderTrade.language.getItemnotallowlegendary().getId()))
+          .display(Utils.parseItemModel(CobbleWonderTrade.language.getItemnotallowlegendary()))
           .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnotallowlegendary().getTitle()))
           .lore(Component.class,
             AdventureTranslator.toNativeL(CobbleWonderTrade.language.getItemnotallowlegendary().getLore()))

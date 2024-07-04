@@ -52,7 +52,7 @@ public class Config {
     legendaryrate = 16512;
     shinys = 0;
     legendaries = 0;
-    savepool = false;
+    savepool = true;
     poolview = false;
     emitcapture = false;
     israndom = true;
@@ -99,6 +99,7 @@ public class Config {
         itemclose = config.getItemclose();
         itemnextpage = config.getItemnextpage();
         savepool = config.isSavepool();
+
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH, "config.json",
           data);

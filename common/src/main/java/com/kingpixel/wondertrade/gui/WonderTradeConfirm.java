@@ -26,12 +26,12 @@ import java.util.Objects;
 public class WonderTradeConfirm {
   public static GooeyPage open(Pokemon pokemon) {
     GooeyButton fill = GooeyButton.builder()
-      .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
+      .display(Utils.fill())
       .title("")
       .build();
     GooeyButton confirm = GooeyButton.builder()
-      .display(Utils.parseItemId(CobbleWonderTrade.language.getConfirm().getId()))
-      .title(AdventureTranslator.toNative(PokemonUtils.replace(CobbleUtils.language.getPokemonnameformat(), pokemon)))
+      .display(Utils.parseItemModel(CobbleWonderTrade.language.getConfirm()))
+      .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getConfirm().getTitle()))
       .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getConfirm().getLore()))
       .onClick(action -> {
         try {
@@ -47,13 +47,13 @@ public class WonderTradeConfirm {
 
     GooeyButton pokebutton = GooeyButton.builder()
       .display(PokemonItem.from(pokemon))
-      .title(AdventureTranslator.toNative(pokemon.getSpecies().getName()))
+      .title(AdventureTranslator.toNative(PokemonUtils.replace(CobbleUtils.language.getPokemonnameformat(), pokemon)))
       .lore(Component.class, AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleUtils.language.getLorepokemon()
         , pokemon)))
       .build();
 
     GooeyButton cancel = GooeyButton.builder()
-      .display(Utils.parseItemId(CobbleWonderTrade.language.getCancel().getId()))
+      .display(Utils.parseItemModel(CobbleWonderTrade.language.getCancel()))
       .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getCancel().getTitle()))
       .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getCancel().getLore()))
       .onClick(action -> {
@@ -143,6 +143,7 @@ public class WonderTradeConfirm {
     );
     CobbleWonderTrade.manager.getUserInfo().get(player.getUUID()).setMessagesend(false);
     CobbleWonderTrade.manager.addPlayerWithDate(player, CobbleWonderTrade.config.getCooldown());
+    CobbleWonderTrade.manager.writeInfo();
     return true;
   }
 }
