@@ -1,5 +1,8 @@
 # WonderTrade
 
+- Modrinth: [Modrinth](https://modrinth.com/mod/zonary123-cobble-wondertrade)
+- Discord: [Discord](https://discord.com/invite/fKNc7FnXpa)
+
 ## Description
 
 WonderTrade is a Minecraft plugin designed for Cobblemon. It introduces a unique trading system that allows players to

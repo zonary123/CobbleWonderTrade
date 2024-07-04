@@ -14,19 +14,6 @@ allprojects {
     version = rootProject.mod_version
 }
 
-// Custom task to generate changelog at root project level
-task generateChangelog {
-    doLast {
-        def version = project.version
-        def changelogFile = file("$rootDir/CHANGELOG.md")
-        def changelogContent = changelogFile.exists() ? changelogFile.text : "No changelog available."
-        def changelogDir = file("$rootDir/changelog")
-        changelogDir.mkdirs()
-        def changelogOutputFile = file("$changelogDir/CHANGELOG-${version}.md")
-        changelogOutputFile.text = changelogContent
-        changelogFile.write("# Changelog\n\n## [${version}]\n\n${changelogContent}", true)
-    }
-}
 
 // Ensure the generateChangelog task runs before the build task in all subprojects
 subprojects {
@@ -75,24 +62,10 @@ subprojects {
     tasks.withType(JavaCompile).configureEach {
         it.options.release = 17
     }
-
-    // Ensure generateChangelog runs before build
-    tasks.named("build") {
-        dependsOn(rootProject.tasks.generateChangelog)
-    }
+    
 
     // Configure Maven publishing.
     publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                artifactId = base.archivesName.get()
-                from components.java
-                // Attach the generated changelog as an artifact
-                artifact("${rootProject.buildDir}/changelog/CHANGELOG-${rootProject.version}.md") {
-                    classifier "changelog"
-                }
-            }
-        }
 
         repositories {
             // Add repositories to publish to here.
