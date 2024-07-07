@@ -18,6 +18,11 @@ import java.util.Objects;
 public class CommandWonderTradePool implements Command<CommandSourceStack> {
 
   @Override public int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    if (!context.getSource().isPlayer()) {
+      context.getSource().getServer().sendSystemMessage(AdventureTranslator.toNative("You must be a player to use " +
+        "this command"));
+      return 0;
+    }
     Player player = context.getSource().getPlayer();
     if (CobbleWonderTrade.config.isPoolview()) {
       UIManager.openUIForcefully(Objects.requireNonNull(CobbleWonderTrade.server.getPlayerList().getPlayer(player.getUUID())), WonderTradePool.open());

@@ -60,7 +60,12 @@ public class CommandTree {
           .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
           .executes(context -> {
             CobbleWonderTrade.load();
-            Objects.requireNonNull(context.getSource().getPlayer()).sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
+            if (context.getSource().isPlayer()) {
+              Objects.requireNonNull(context.getSource().getPlayer()).sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
+            } else {
+              CobbleWonderTrade.LOGGER.info(CobbleWonderTrade.language.getReload().replace("%prefix%",
+                CobbleWonderTrade.language.getPrefix()));
+            }
             return 1;
           })));
 
@@ -78,6 +83,10 @@ public class CommandTree {
         .then(Commands.literal("resetcooldown")
           .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
           .executes(context -> {
+            if (!context.getSource().isPlayer()) {
+              context.getSource().getServer().sendSystemMessage(AdventureTranslator.toNative("You must be a player to use this command"));
+              return 0;
+            }
             Player player = context.getSource().getPlayer();
             CobbleWonderTrade.manager.getUserInfo().put(player.getUUID(), new WonderTradeManager.UserInfo(new Date()));
             return 1;
@@ -127,6 +136,10 @@ public class CommandTree {
                   Commands.literal("confirm")
                     .executes(
                       context -> {
+                        if (!context.getSource().isPlayer()) {
+                          context.getSource().getServer().sendSystemMessage(AdventureTranslator.toNative("You must be a player to use this command"));
+                          return 0;
+                        }
                         Player player = context.getSource().getPlayer();
                         if (player == null) return 0;
                         Integer slot = IntegerArgumentType.getInteger(context, "slot");

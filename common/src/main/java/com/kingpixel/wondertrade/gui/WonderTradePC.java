@@ -78,7 +78,7 @@ public class WonderTradePC {
           .set(5, 8, next);
 
         LinkedPage.Builder linkedPageBuilder = LinkedPage.builder()
-          .title(CobbleWonderTrade.language.getTitlePc());
+          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getTitlePc()));
 
         LinkedPage firstPage = PaginationHelper.createPagesFromPlaceholders(template, buttons, linkedPageBuilder);
         return firstPage;
