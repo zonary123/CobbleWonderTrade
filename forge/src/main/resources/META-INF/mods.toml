@@ -28,22 +28,8 @@ ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.wondertrade]]
-modId = "architectury"
-mandatory = true
-versionRange = "[9.2.14,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies.wondertrade]]
 modId = "cobblemon"
 mandatory = true
 versionRange = "[1.5.0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies.wondertrade]]
-modId = "gooeylibs2"
-mandatory = true
-versionRange = "[3.0.0,)"
 ordering = "AFTER"
 side = "BOTH"

@@ -19,7 +19,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 
 import java.util.Date;
 import java.util.Objects;
@@ -87,14 +86,23 @@ public class CommandTree {
               context.getSource().getServer().sendSystemMessage(AdventureTranslator.toNative("You must be a player to use this command"));
               return 0;
             }
-            Player player = context.getSource().getPlayer();
+
+            ServerPlayer player = context.getSource().getPlayer();
+            if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
+              player.sendSystemMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
+              return 0;
+            }
             CobbleWonderTrade.manager.getUserInfo().put(player.getUUID(), new WonderTradeManager.UserInfo(new Date()));
             return 1;
           })
           .then(Commands.argument("player", EntityArgument.player())
             .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
             .executes(context -> {
-              Player player = EntityArgument.getPlayer(context, "player");
+              ServerPlayer player = EntityArgument.getPlayer(context, "player");
+              if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
+                player.sendSystemMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
+                return 0;
+              }
               CobbleWonderTrade.manager.getUserInfo().put(player.getUUID(), new WonderTradeManager.UserInfo(new Date()));
               return 1;
             })
@@ -108,6 +116,10 @@ public class CommandTree {
         .executes(context -> {
           ServerPlayer player = context.getSource().getPlayerOrException();
           if (player == null) return 0;
+          if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
+            player.sendSystemMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
+            return 0;
+          }
           try {
             UIManager.openUIForcefully(player, Objects.requireNonNull(WonderTradePC.open(player)));
           } catch (ExecutionException | InterruptedException e) {
@@ -140,8 +152,12 @@ public class CommandTree {
                           context.getSource().getServer().sendSystemMessage(AdventureTranslator.toNative("You must be a player to use this command"));
                           return 0;
                         }
-                        Player player = context.getSource().getPlayer();
+                        ServerPlayer player = context.getSource().getPlayer();
                         if (player == null) return 0;
+                        if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
+                          player.sendSystemMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
+                          return 0;
+                        }
                         Integer slot = IntegerArgumentType.getInteger(context, "slot");
                         slot--;
                         if (slot < 0 || slot > 5) return 0;

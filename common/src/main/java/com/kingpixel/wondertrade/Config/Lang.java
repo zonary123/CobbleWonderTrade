@@ -29,6 +29,7 @@ public class Lang {
   private String messageNoPokemonSlot;
   private String messageNoPoolView;
   private String messagePokemonToWondertrade;
+  private String messageisLegendaryOrShinyMessage;
   private String fill;
   private String yes;
   private String no;
@@ -59,8 +60,8 @@ public class Lang {
     titleconfirm = "<gradient:#ff7900:#ffdbba>Confirm";
     yes = "&aYes";
     no = "&cNo";
-    message = "%prefix% &aYou have received a %pokemon% %gender% %form% %shiny%&a!";
-    symbolShiny = "&e⭐";
+    message = "%prefix% &aYou have received a %pokemon% %gender% %form%%shiny%&a!";
+    symbolShiny = " &e⭐";
     messagepoolwondertrade = "%prefix% &aThere are currently &e%total% &cpokemons &ain the WonderTrade pool! \n" +
       "%prefix% " +
       "&aUse " +
@@ -70,6 +71,7 @@ public class Lang {
     messagewondertraderecieved = "%prefix% &aYou have received a &6%pokemon% %gender% &f(&b%form%&f) %shiny%&a!";
     messageNoPokemonSlot = "%prefix% &cYou don't have any pokemon in this slot!";
     messagePokemonTradeBlackList = "%prefix% &cYou can't trade this pokemon %pokemon%!";
+    messageisLegendaryOrShinyMessage = "%prefix% &aThe special pokemon &6%pokemon% %gender% &f(&b%form%&f) %shiny%&a! It has been withdrawn from WonderTrade by the player &6%player%&a.";
     fill = "minecraft:gray_stained_glass_pane";
     colorhexnamepoke = "<gradient:#ff7900:#ffdbba>%pokemon%</gradient>";
     notallowshiny = "<gradient:#db2e2e:#e68c8c>You can't trade shiny pokemon!";
@@ -140,6 +142,7 @@ public class Lang {
         messageNoPokemonSlot = lang.getMessageNoPokemonSlot();
         messagePokemonTradeBlackList = lang.getMessagePokemonTradeBlackList();
         messageNoPoolView = lang.getMessageNoPoolView();
+        messageisLegendaryOrShinyMessage = lang.getMessageisLegendaryOrShinyMessage();
         Pc = lang.getPc();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",

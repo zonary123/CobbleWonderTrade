@@ -44,7 +44,7 @@ public class Config {
     lang = "en";
     cooldown = 30;
     cooldownmessage = 15;
-    sizePool = 50;
+    sizePool = 72;
     minlvreq = 5;
     minlv = 5;
     maxlv = 36;
@@ -53,9 +53,9 @@ public class Config {
     shinys = 0;
     legendaries = 0;
     savepool = true;
-    poolview = false;
+    poolview = true;
     emitcapture = false;
-    israndom = true;
+    israndom = false;
     allowshiny = true;
     allowlegendary = true;
     pokeblacklist = List.of("Magikarp");

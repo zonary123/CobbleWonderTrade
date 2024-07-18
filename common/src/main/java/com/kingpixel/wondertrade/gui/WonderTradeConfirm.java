@@ -104,21 +104,20 @@ public class WonderTradeConfirm {
     }
     Pokemon pokemongive;
 
-
     if (!CobbleWonderTrade.config.isIsrandom()) {
       pokemongive = CobbleWonderTrade.manager.putPokemon(pokemonplayer);
-      if (pokemongive == null) {
-        return false;
-      }
+    } else {
+      pokemongive = CobbleWonderTrade.manager.getRandomPokemon();
+    }
+
+    if (!CobbleWonderTrade.config.isIsrandom()) {
+      if (pokemongive == null) return false;
       if (!partyStorageSlot.remove(pokemonplayer)) {
         Cobblemon.INSTANCE.getStorage().getPC(player.getUUID()).remove(pokemonplayer);
       }
       partyStorageSlot.add(pokemongive);
     } else {
-      pokemongive = CobbleWonderTrade.manager.getRandomPokemon();
-      if (pokemongive == null) {
-        return false;
-      }
+      if (pokemongive == null) return false;
       if (!partyStorageSlot.remove(pokemonplayer)) {
         Cobblemon.INSTANCE.getStorage().getPC(player.getUUID()).remove(pokemonplayer);
       }
@@ -136,6 +135,13 @@ public class WonderTradeConfirm {
       Utils.broadcastMessage(PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
         .replace("%player%", player.getGameProfile().getName())
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix()), pokemonplayer));
+      if (pokemongive.isLegendary() || pokemongive.getShiny()) {
+        Utils.broadcastMessage(
+          PokemonUtils.replace(CobbleWonderTrade.language.getMessageisLegendaryOrShinyMessage()
+            .replace("%player%", player.getGameProfile().getName())
+            .replace("%prefix%", CobbleWonderTrade.language.getPrefix()), pokemongive)
+        );
+      }
     }
     // Mensaje pokemon recibido
     player.sendSystemMessage(AdventureTranslator.toNative(PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(),
