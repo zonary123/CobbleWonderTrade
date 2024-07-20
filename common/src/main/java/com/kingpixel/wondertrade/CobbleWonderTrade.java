@@ -1,13 +1,13 @@
 package com.kingpixel.wondertrade;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.kingpixel.cobbleutils.util.AdventureTranslator;
 import com.kingpixel.wondertrade.Config.Config;
 import com.kingpixel.wondertrade.Config.Lang;
 import com.kingpixel.wondertrade.Manager.WonderTradeConfig;
 import com.kingpixel.wondertrade.Manager.WonderTradeManager;
 import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.CommandTree;
-import com.kingpixel.wondertrade.utils.AdventureTranslator;
 import com.kingpixel.wondertrade.utils.SpawnRates;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
@@ -100,9 +100,10 @@ public class CobbleWonderTrade {
         server.getPlayerList().getPlayers().forEach(player -> {
           if (manager.hasCooldownEnded(player) && !manager.getUserInfo().get(player.getUUID()).isMessagesend()) {
             manager.getUserInfo().get(player.getUUID()).setMessagesend(true);
-            player.sendSystemMessage(AdventureTranslator.toNative(language.getMessagewondertradeready().replace("%prefix%",
-              language.getPrefix()
-            )));
+            player.sendSystemMessage(AdventureTranslator.toNative(language.getMessagewondertradeready()
+              .replace("%prefix%",
+                language.getPrefix()
+              )));
           }
         });
       }

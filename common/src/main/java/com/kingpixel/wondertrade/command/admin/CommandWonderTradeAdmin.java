@@ -5,7 +5,7 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.storage.NoPokemonStoreException;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.gui.WonderTrade;
-import com.kingpixel.wondertrade.utils.AdventureTranslator;
+import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -23,7 +23,7 @@ public class CommandWonderTradeAdmin implements Command<CommandSourceStack> {
   @Override public int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
     ServerPlayer player = EntityArgument.getPlayer(context, "player");
     if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-      player.sendSystemMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
+      player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
       return 0;
     }
     try {

@@ -37,6 +37,20 @@ public class WonderTradeManager {
     return String.format("%d days, %d hours, %d minutes, %d seconds", diffDays, diffHours, diffMinutes, diffSeconds);
   }
 
+  public List<Pokemon> getPokemonList(boolean special) {
+    List<Pokemon> pokemons = new ArrayList<>();
+    for (JsonObject jsonObject : pokemonList) {
+      Pokemon pokemon = Pokemon.Companion.loadFromJSON(jsonObject);
+      if (!special) {
+        pokemons.add(pokemon);
+      } else {
+        if (pokemon.getShiny() || pokemon.isLegendary() || pokemon.isUltraBeast()) {
+          pokemons.add(pokemon);
+        }
+      }
+    }
+    return pokemons;
+  }
 
   public WonderTradeManager() {
     userInfo = new HashMap<>();

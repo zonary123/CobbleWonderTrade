@@ -4,16 +4,16 @@ import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.pokemon.PokemonCapturedEvent;
 import com.cobblemon.mod.common.api.pokemon.PokemonPropertyExtractor;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
-import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.entity.pokeball.EmptyPokeBallEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
-import com.cobblemon.mod.common.util.LocalizationUtilsKt;
+import com.kingpixel.cobbleutils.util.AdventureTranslator;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -77,6 +77,18 @@ public class WonderTradeUtil {
 
   private static final Random RANDOM = new Random();
 
+  public static Component toNative(String message) {
+    return AdventureTranslator.toNativeWithOutPrefix(message
+      .replace("%prefix%", CobbleWonderTrade.language.getPrefix()));
+  }
+
+  public static void broadcast(String message) {
+    CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> {
+      player.sendSystemMessage(toNative(message));
+    });
+  }
+
+
   public static Pokemon getRandomPokemon() {
     Pokemon pokemon = new Pokemon();
     pokemon.createPokemonProperties(PokemonPropertyExtractor.ALL);
@@ -111,69 +123,6 @@ public class WonderTradeUtil {
     generatedPokemonNames.add(pokemon.getSpecies().showdownId());
     pokemon.setLevel(RANDOM.nextInt(CobbleWonderTrade.config.getMaxlv() - CobbleWonderTrade.config.getMinlv()) + CobbleWonderTrade.config.getMinlv());
     return pokemon;
-  }
-
-
-  public static String getUserCooldown(UUID userId) {
-    Date userDate = CobbleWonderTrade.manager.getUserInfo().get(userId).getDate();
-    if (userDate == null) {
-      return "No cooldown";
-    }
-
-    long diffInMillies = userDate.getTime() - new Date().getTime();
-    if (diffInMillies < 0) {
-      return "00:00";
-    }
-    long diffInSeconds = TimeUnit.SECONDS.convert(diffInMillies, TimeUnit.MILLISECONDS);
-    long hours = diffInSeconds / 3600;
-    long minutes = (diffInSeconds % 3600) / 60;
-    long seconds = diffInSeconds % 60;
-
-    if (hours > 0) {
-      return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    } else {
-      return String.format("%02d:%02d", minutes, seconds);
-    }
-  }
-
-  public static List<String> formatPokemonLore(Pokemon pokemon) {
-    String moveOne = pokemon.getMoveSet().getMoves().size() >= 1 ? pokemon.getMoveSet().get(0).getDisplayName().getString() : "Empty";
-    String moveTwo = pokemon.getMoveSet().getMoves().size() >= 2 ? pokemon.getMoveSet().get(1).getDisplayName().getString() : "Empty";
-    String moveThree = pokemon.getMoveSet().getMoves().size() >= 3 ? pokemon.getMoveSet().get(2).getDisplayName().getString() : "Empty";
-    String moveFour = pokemon.getMoveSet().getMoves().size() >= 4 ? pokemon.getMoveSet().get(3).getDisplayName().getString() : "Empty";
-    List<String> l = new ArrayList<>(CobbleWonderTrade.language.getLorepokemon());
-    List<String> lore = new ArrayList<>();
-
-    if (pokemon.getLevel() < CobbleWonderTrade.config.getMinlvreq()) {
-      lore.add(CobbleWonderTrade.language.getDonthavelevel());
-    }
-    lore.addAll(l);
-    lore.replaceAll(s -> s.replace("%level%", String.valueOf(pokemon.getLevel()))
-      .replace("%shiny%", pokemon.getShiny() ? CobbleWonderTrade.language.getYes() : CobbleWonderTrade.language.getNo())
-      .replace("%legends%", pokemon.isLegendary() ? CobbleWonderTrade.language.getYes() : CobbleWonderTrade.language.getNo())
-      .replace("%nature%",
-        LocalizationUtilsKt.lang(pokemon.getNature().getDisplayName().replace("cobblemon.", "")).getString())
-      .replace("%ability%",
-        LocalizationUtilsKt.lang(pokemon.getAbility().getDisplayName().replace("cobblemon.", "")).getString())
-      .replace("%hp%", String.valueOf(pokemon.getIvs().get(Stats.HP)))
-      .replace("%atk%", String.valueOf(pokemon.getIvs().get(Stats.ATTACK)))
-      .replace("%def%", String.valueOf(pokemon.getIvs().get(Stats.DEFENCE)))
-      .replace("%spa%", String.valueOf(pokemon.getIvs().get(Stats.SPECIAL_ATTACK)))
-      .replace("%spd%", String.valueOf(pokemon.getIvs().get(Stats.SPECIAL_DEFENCE)))
-      .replace("%spe%", String.valueOf(pokemon.getIvs().get(Stats.SPEED)))
-      .replace("%evhp%", String.valueOf(pokemon.getEvs().get(Stats.HP)))
-      .replace("%evatk%", String.valueOf(pokemon.getEvs().get(Stats.ATTACK)))
-      .replace("%evdef%", String.valueOf(pokemon.getEvs().get(Stats.DEFENCE)))
-      .replace("%evspa%", String.valueOf(pokemon.getEvs().get(Stats.SPECIAL_ATTACK)))
-      .replace("%evspd%", String.valueOf(pokemon.getEvs().get(Stats.SPECIAL_DEFENCE)))
-      .replace("%evspe%", String.valueOf(pokemon.getEvs().get(Stats.SPEED)))
-      .replace("%move1%", moveOne)
-      .replace("%move2%", moveTwo)
-      .replace("%move3%", moveThree)
-      .replace("%move4%", moveFour)
-      .replace("%form%", pokemon.getForm().getName())
-      .replace("%minlevel%", String.valueOf(CobbleWonderTrade.config.getMinlvreq())));
-    return lore;
   }
 
 }

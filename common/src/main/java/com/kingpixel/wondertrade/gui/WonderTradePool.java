@@ -14,10 +14,11 @@ import com.cobblemon.mod.common.api.storage.NoPokemonStoreException;
 import com.cobblemon.mod.common.item.PokemonItem;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.CobbleUtils;
+import com.kingpixel.cobbleutils.util.AdventureTranslator;
 import com.kingpixel.cobbleutils.util.PokemonUtils;
+import com.kingpixel.cobbleutils.util.UIUtils;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.utils.AdventureTranslator;
-import com.kingpixel.wondertrade.utils.Utils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -30,46 +31,38 @@ import java.util.Objects;
  * @author Carlos Varas Alonso - 02/06/2024 2:19
  */
 public class WonderTradePool {
-  public static Page open() {
+  public static Page open(boolean special) {
     GooeyButton fill = GooeyButton.builder()
-      .display(Utils.fill())
+      .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
       .title("")
       .build();
     List<Button> buttons = new ArrayList<>();
 
-    List<Pokemon> pokemons = new ArrayList<>();
-    CobbleWonderTrade.manager.getPokemonList().forEach(pokemon -> {
-      pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
-    });
+    List<Pokemon> pokemons = new ArrayList<>(CobbleWonderTrade.manager.getPokemonList(special));
     for (Pokemon p : pokemons) {
       GooeyButton pokemonButton = createPokemonButton(p);
       buttons.add(pokemonButton);
     }
 
     LinkedPageButton previus = LinkedPageButton.builder()
-      .display(Utils.parseItemModel(CobbleWonderTrade.language.getItempreviouspage()))
-      .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItempreviouspage().getTitle()))
+      .display(CobbleUtils.language.getItemPrevious().getItemStack())
+      .title(AdventureTranslator.toNative(CobbleUtils.language.getItemPrevious().getDisplayname()))
       .linkType(LinkType.Previous)
       .build();
 
     LinkedPageButton next = LinkedPageButton.builder()
-      .display(Utils.parseItemModel(CobbleWonderTrade.language.getItemnextpage()))
-      .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnextpage().getTitle()))
+      .display(CobbleUtils.language.getItemNext().getItemStack())
+      .title(AdventureTranslator.toNative(CobbleUtils.language.getItemNext().getDisplayname()))
       .linkType(LinkType.Next)
       .build();
 
-    GooeyButton close = GooeyButton.builder()
-      .display(Utils.parseItemModel(CobbleWonderTrade.language.getItemclose()))
-      .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemclose().getTitle()))
-      .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getItemclose().getLore()))
-      .onClick((action) -> {
-        try {
-          UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTrade.open(action.getPlayer())));
-        } catch (NoPokemonStoreException e) {
-          e.printStackTrace();
-        }
-      })
-      .build();
+    GooeyButton close = UIUtils.getCloseButton(action -> {
+      try {
+        UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTrade.open(action.getPlayer())));
+      } catch (NoPokemonStoreException e) {
+        e.printStackTrace();
+      }
+    });
 
     PlaceholderButton placeholder = new PlaceholderButton();
 

@@ -12,9 +12,11 @@ import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.storage.NoPokemonStoreException;
 import com.cobblemon.mod.common.api.storage.pc.PCStore;
+import com.kingpixel.cobbleutils.CobbleUtils;
+import com.kingpixel.cobbleutils.util.AdventureTranslator;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.utils.AdventureTranslator;
-import com.kingpixel.wondertrade.utils.Utils;
+import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
@@ -40,25 +42,26 @@ public class WonderTradePC {
           buttons.add(WonderTrade.createButtonPokemon(pokemon));
         });
         GooeyButton fill = GooeyButton.builder()
-          .display(Utils.fill())
+          .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
           .title("")
           .build();
+
         LinkedPageButton previus = LinkedPageButton.builder()
-          .display(Utils.parseItemModel(CobbleWonderTrade.config.getItempreviouspage()))
-          .title(AdventureTranslator.toNative(CobbleWonderTrade.config.getItempreviouspage().getTitle()))
+          .display(CobbleUtils.language.getItemPrevious().getItemStack())
+          .title(AdventureTranslator.toNative(CobbleUtils.language.getItemPrevious().getDisplayname()))
           .linkType(LinkType.Previous)
           .build();
 
         LinkedPageButton next = LinkedPageButton.builder()
-          .display(Utils.parseItemModel(CobbleWonderTrade.config.getItemnextpage()))
-          .title(AdventureTranslator.toNative(CobbleWonderTrade.config.getItemnextpage().getTitle()))
+          .display(CobbleUtils.language.getItemNext().getItemStack())
+          .title(AdventureTranslator.toNative(CobbleUtils.language.getItemClose().getDisplayname()))
           .linkType(LinkType.Next)
           .build();
 
         GooeyButton close = GooeyButton.builder()
-          .display(Utils.parseItemModel(CobbleWonderTrade.config.getItemclose()))
-          .title(AdventureTranslator.toNative(CobbleWonderTrade.config.getItemclose().getTitle()))
-          .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.config.getItemclose().getLore()))
+          .display(CobbleUtils.language.getItemClose().getItemStack())
+          .title(AdventureTranslator.toNative(CobbleUtils.language.getItemClose().getDisplayname()))
+          .lore(Component.class, AdventureTranslator.toNativeL(CobbleUtils.language.getItemClose().getLore()))
           .onClick((action) -> {
             try {
               UIManager.openUIForcefully(action.getPlayer(), WonderTrade.open(action.getPlayer()));
@@ -78,7 +81,7 @@ public class WonderTradePC {
           .set(5, 8, next);
 
         LinkedPage.Builder linkedPageBuilder = LinkedPage.builder()
-          .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getTitlePc()));
+          .title(WonderTradeUtil.toNative(CobbleWonderTrade.language.getTitlePc()));
 
         LinkedPage firstPage = PaginationHelper.createPagesFromPlaceholders(template, buttons, linkedPageBuilder);
         return firstPage;

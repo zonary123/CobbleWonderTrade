@@ -1,9 +1,8 @@
 package com.kingpixel.wondertrade.Config;
 
 import com.google.gson.Gson;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.Model.ItemModel;
-import com.kingpixel.wondertrade.utils.Utils;
 import lombok.Getter;
 
 import java.util.List;
@@ -36,9 +35,6 @@ public class Config {
   private List<String> poketradeblacklist;
   private List<String> legends;
   private List<String> aliases;
-  private ItemModel itempreviouspage;
-  private ItemModel itemclose;
-  private ItemModel itemnextpage;
 
   public Config() {
     lang = "en";
@@ -63,10 +59,6 @@ public class Config {
     legends = List.of("Magikarp");
     aliases = List.of("wt", "wondertrade");
     //forms = Map.of("hisui", "&f(&eHisuian&f)");
-    itempreviouspage = new ItemModel("minecraft:arrow", "&7Previous Page", List.of("&7Click to go to the previous " +
-      "page"));
-    itemnextpage = new ItemModel("minecraft:arrow", "&7Next Page", List.of("&7Click to go to the next page"));
-    itemclose = new ItemModel("minecraft:barrier", "&cClose", List.of("&7Click to close the menu"));
   }
 
   public void init() {
@@ -95,9 +87,6 @@ public class Config {
         poketradeblacklist = config.getPoketradeblacklist();
         // forms = config.getForms();
         poolview = config.isPoolview();
-        itempreviouspage = config.getItempreviouspage();
-        itemclose = config.getItemclose();
-        itemnextpage = config.getItemnextpage();
         savepool = config.isSavepool();
 
         String data = gson.toJson(this);

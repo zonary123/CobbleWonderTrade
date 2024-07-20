@@ -10,10 +10,11 @@ import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
 import com.cobblemon.mod.common.item.PokemonItem;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.CobbleUtils;
+import com.kingpixel.cobbleutils.util.AdventureTranslator;
+import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.cobbleutils.util.PokemonUtils;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.utils.AdventureTranslator;
-import com.kingpixel.wondertrade.utils.Utils;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -26,13 +27,14 @@ import java.util.Objects;
 public class WonderTradeConfirm {
   public static GooeyPage open(Pokemon pokemon) {
     GooeyButton fill = GooeyButton.builder()
-      .display(Utils.fill())
+      .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
       .title("")
       .build();
+
     GooeyButton confirm = GooeyButton.builder()
-      .display(Utils.parseItemModel(CobbleWonderTrade.language.getConfirm()))
-      .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getConfirm().getTitle()))
-      .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getConfirm().getLore()))
+      .display(CobbleUtils.language.getItemConfirm().getItemStack())
+      .title(AdventureTranslator.toNative(CobbleUtils.language.getItemConfirm().getDisplayname()))
+      .lore(Component.class, AdventureTranslator.toNativeL(CobbleUtils.language.getItemConfirm().getLore()))
       .onClick(action -> {
         try {
           if (trade(action.getPlayer(), pokemon)) {
@@ -53,9 +55,9 @@ public class WonderTradeConfirm {
       .build();
 
     GooeyButton cancel = GooeyButton.builder()
-      .display(Utils.parseItemModel(CobbleWonderTrade.language.getCancel()))
-      .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getCancel().getTitle()))
-      .lore(Component.class, AdventureTranslator.toNativeL(CobbleWonderTrade.language.getCancel().getLore()))
+      .display(CobbleUtils.language.getItemCancel().getItemStack())
+      .title(AdventureTranslator.toNative(CobbleUtils.language.getItemCancel().getDisplayname()))
+      .lore(Component.class, AdventureTranslator.toNativeL(CobbleUtils.language.getItemCancel().getLore()))
       .onClick(action -> {
         try {
           UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTrade.open(action.getPlayer())));
@@ -80,13 +82,13 @@ public class WonderTradeConfirm {
 
   public static boolean trade(Player player, Pokemon pokemonplayer) throws NoPokemonStoreException {
     if (!CobbleWonderTrade.manager.hasCooldownEnded(player)) {
-      player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessagewondertradecooldown()
-        .replace("%time%", CobbleWonderTrade.manager.getCooldown(player.getUUID()))
+      player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessagewondertradecooldown()
+        .replace("%time%", PlayerUtils.getCooldown(CobbleWonderTrade.manager.getUserInfo().get(player.getUUID()).getDate()))
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
     if (pokemonplayer == null) {
-      player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessageNoPokemonSlot()
+      player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessageNoPokemonSlot()
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
@@ -97,7 +99,7 @@ public class WonderTradeConfirm {
     PlayerPartyStore partyStorageSlot = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID());
 
     if (CobbleWonderTrade.config.getPoketradeblacklist().contains(pokemonplayer.showdownId())) {
-      player.sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getMessagePokemonTradeBlackList()
+      player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessagePokemonTradeBlackList()
         .replace("%pokemon%", pokemonplayer.getSpecies().getName())
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
@@ -132,11 +134,11 @@ public class WonderTradeConfirm {
 
     // Mensaje pokemon metido en el wondertrade
     if (!CobbleWonderTrade.config.isIsrandom()) {
-      Utils.broadcastMessage(PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
+      WonderTradeUtil.broadcast(PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
         .replace("%player%", player.getGameProfile().getName())
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix()), pokemonplayer));
       if (pokemongive.isLegendary() || pokemongive.getShiny()) {
-        Utils.broadcastMessage(
+        WonderTradeUtil.broadcast(
           PokemonUtils.replace(CobbleWonderTrade.language.getMessageisLegendaryOrShinyMessage()
             .replace("%player%", player.getGameProfile().getName())
             .replace("%prefix%", CobbleWonderTrade.language.getPrefix()), pokemongive)
@@ -144,7 +146,7 @@ public class WonderTradeConfirm {
       }
     }
     // Mensaje pokemon recibido
-    player.sendSystemMessage(AdventureTranslator.toNative(PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(),
+    player.sendSystemMessage(WonderTradeUtil.toNative(PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(),
       pokemongive))
     );
     CobbleWonderTrade.manager.getUserInfo().get(player.getUUID()).setMessagesend(false);

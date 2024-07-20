@@ -1,9 +1,9 @@
 package com.kingpixel.wondertrade.Config;
 
 import com.google.gson.Gson;
+import com.kingpixel.cobbleutils.Model.ItemModel;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.Model.ItemModel;
-import com.kingpixel.wondertrade.utils.Utils;
 import lombok.Getter;
 
 import java.util.List;
@@ -30,21 +30,13 @@ public class Lang {
   private String messageNoPoolView;
   private String messagePokemonToWondertrade;
   private String messageisLegendaryOrShinyMessage;
+  private String messageThePokemonNotHaveMinLevel;
   private String fill;
-  private String yes;
-  private String no;
-  private String symbolShiny;
   private String colorhexnamepoke;
   private String donthavelevel;
   private String notallowshiny;
   private String notallowlegendary;
   private ItemModel info;
-  private ItemModel nopokemon;
-  private ItemModel confirm;
-  private ItemModel cancel;
-  private ItemModel itempreviouspage;
-  private ItemModel itemnextpage;
-  private ItemModel itemclose;
   private ItemModel itemnotallowpokemon;
   private ItemModel itemnotallowshiny;
   private ItemModel itemnotallowlegendary;
@@ -52,46 +44,41 @@ public class Lang {
   private List<String> lorepokemon;
 
   public Lang() {
-    prefix = "&8[&6WonderTrade&8] ";
-    reload = "%prefix% &aReloaded!";
+    prefix = "&8[<gradient:#ff7900:#ffdbba>WonderTrade&8] ";
+    reload = "%prefix% <#64de7c>Reloaded!";
     title = "<gradient:#ff7900:#ffdbba>WonderTrade";
     titlepool = "&6WonderTrade Pool";
     titlePc = "§bPC";
-    titleconfirm = "<gradient:#ff7900:#ffdbba>Confirm";
-    yes = "&aYes";
-    no = "&cNo";
-    message = "%prefix% &aYou have received a %pokemon% %gender% %form%%shiny%&a!";
-    symbolShiny = " &e⭐";
-    messagepoolwondertrade = "%prefix% &aThere are currently &e%total% &cpokemons &ain the WonderTrade pool! \n" +
+    titleconfirm = "<gradient:#6ed480:#96e0a3>Confirm";
+    message = "%prefix% <#64de7c>You have received a &6%pokemon% %gender% &f(&b%form%&f) %shiny%<#64de7c>!";
+    messagepoolwondertrade = "%prefix% <#64de7c>There are currently &e%total% <#d65549>pokemons <#64de7c>in the WonderTrade pool! \n" +
       "%prefix% " +
-      "&aUse " +
-      "&6/wt &ato trade a pokemon! \nThere are &6%shinys% &eshinys &aand &6%legends% &dlegendaries!";
-    messageNoPoolView = "%prefix% &cThe pool view is disabled!";
-    messagewondertradeready = "%prefix% &aWonderTrade is ready!";
-    messagewondertraderecieved = "%prefix% &aYou have received a &6%pokemon% %gender% &f(&b%form%&f) %shiny%&a!";
-    messageNoPokemonSlot = "%prefix% &cYou don't have any pokemon in this slot!";
-    messagePokemonTradeBlackList = "%prefix% &cYou can't trade this pokemon %pokemon%!";
-    messageisLegendaryOrShinyMessage = "%prefix% &aThe special pokemon &6%pokemon% %gender% &f(&b%form%&f) %shiny%&a! It has been withdrawn from WonderTrade by the player &6%player%&a.";
+      "<#64de7c>Use " +
+      "&6/wt <#64de7c>to trade a pokemon! \nThere are &6%shinys% &eshinys <#64de7c>and &6%legends% &dlegendaries!";
+    messageNoPoolView = "%prefix% <#d65549>The pool view is disabled!";
+    messagewondertradeready = "%prefix% <#64de7c>WonderTrade is ready!";
+    messagewondertraderecieved = "%prefix% <#64de7c>You have received a &6%pokemon% %gender% &f(&b%form%&f) %shiny%<#64de7c>!";
+    messageNoPokemonSlot = "%prefix% <#d65549>You don't have any pokemon in this slot!";
+    messagePokemonTradeBlackList = "%prefix% <#d65549>You can't trade this pokemon %pokemon%!";
+    messageisLegendaryOrShinyMessage = "%prefix% <#64de7c>The special pokemon &6%pokemon% %gender% &f(&b%form%&f) %shiny%<#64de7c>! It has been withdrawn from WonderTrade by the player &6%player%<#64de7c>.";
     fill = "minecraft:gray_stained_glass_pane";
     colorhexnamepoke = "<gradient:#ff7900:#ffdbba>%pokemon%</gradient>";
-    notallowshiny = "<gradient:#db2e2e:#e68c8c>You can't trade shiny pokemon!";
-    notallowlegendary = "<gradient:#db2e2e:#e68c8c>You can't trade legendary pokemon!";
-    messagePokemonToWondertrade = "%prefix% &aThe player &6%player% &ahas introduced &6%pokemon% &f(&b%form%&f) " +
-      "%shiny%";
-    info = new ItemModel("minecraft:book", "<gradient:#ff7900:#ffdbba>Info WonderTrade", List.of("&7Shinys: &e%shinys%",
-      "&7Legendaries: &e%legends%", "&7Time: &e%time%"));
-    nopokemon = new ItemModel("cobblemon:poke_ball", "<gradient:#db2e2e:#e68c8c>Empty slot", List.of(""));
-    confirm = new ItemModel("minecraft:lime_stained_glass_pane", "<gradient:#3ec758:#a2f2b2>Confirm</gradient>",
-      List.of(
-        ""));
-    cancel = new ItemModel("minecraft:red_stained_glass_pane", "<gradient:#db2e2e:#e68c8c>Cancel", List.of(""));
-    itempreviouspage = new ItemModel("minecraft:arrow", "&7Previous Page", List.of("&7Click to go to the previous " +
-      "page"));
-    messagewondertradecooldown = "&cYou must wait before trading again %time%!";
-    itemnextpage = new ItemModel("minecraft:arrow", "&7Next Page", List.of("&7Click to go to the next page"));
-    itemclose = new ItemModel("minecraft:barrier", "&cClose", List.of("&7Click to close the menu"));
-    Pc = new ItemModel("cobblemon:pc", "<gradient:#ff7900:#ffdbba>PC", List.of("&7Click to open the PC"));
-    lorepokemon = List.of("&7Click to select this pokemon");
+    notallowshiny = "%prefix% <gradient:#db2e2e:#e68c8c>You can't trade shiny pokemon!";
+    notallowlegendary = "%prefix% <gradient:#db2e2e:#e68c8c>You can't trade legendary pokemon!";
+    messagePokemonToWondertrade = "%prefix% <#64de7c>The player &6%player% <#64de7c>has introduced &6%pokemon% %gender% &f(&b%form%&f) %shiny%";
+    messageThePokemonNotHaveMinLevel = "%prefix% <#d65549>The pokemon &6%pokemon% %gender% &f(&b%form%&f) %shiny% <#d65549>doesn't have the minimum level <#ebab34>%minlevel%<#d65549>!";
+    info = new ItemModel("minecraft:book", "<gradient:#ff7900:#ffdbba>Info WonderTrade", List.of(
+      "",
+      "<#ecca18>Shinys: &f%shinys%",
+      "<#ab8fdb>Legendaries: &f%legends%",
+      "<#3492eb>Cooldown: %time%",
+      "",
+      "<#ebab34>⏺ &7Left click to open the WonderTrade pool view.",
+      "<#ebab34>⏺ &7Right click to open the WonderTrade pool especial view."
+    ));
+    messagewondertradecooldown = "%prefix% <#d65549>You must wait before trading again %time%!";
+    Pc = new ItemModel("cobblemon:pc", "<#49a0d6>PC", List.of("<#ebab34>⏺ &7Click to open the PC"));
+    lorepokemon = List.of("<#ebab34>⏺ &7Click to select this pokemon");
     donthavelevel = "<gradient:#db2e2e:#e68c8c>You don't have a pokemon with level %minlevel%!</gradient>";
     itemnotallowpokemon = new ItemModel("cobblemon:net_ball", "<gradient:#db2e2e:#e68c8c>Not allow pokemon", List.of(
       ""));
@@ -104,14 +91,13 @@ public class Lang {
 
 
   public void init() {
-    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",
+    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH + "lang/",
+      CobbleWonderTrade.config.getLang() + ".json",
       el -> {
         Gson gson = Utils.newGson();
         Lang lang = gson.fromJson(el, Lang.class);
         prefix = lang.getPrefix();
         reload = lang.getReload();
-        yes = lang.getYes();
-        no = lang.getNo();
         message = lang.getMessage();
         messagepoolwondertrade = lang.getMessagepoolwondertrade();
         fill = lang.getFill();
@@ -121,16 +107,9 @@ public class Lang {
         titlePc = lang.getTitlePc();
         titleconfirm = lang.getTitleconfirm();
         titlepool = lang.getTitlepool();
-        nopokemon = lang.getNopokemon();
-        confirm = lang.getConfirm();
-        cancel = lang.getCancel();
         messagePokemonToWondertrade = lang.getMessagePokemonToWondertrade();
-        itempreviouspage = lang.getItempreviouspage();
-        itemnextpage = lang.getItemnextpage();
-        itemclose = lang.getItemclose();
         lorepokemon = lang.getLorepokemon();
         donthavelevel = lang.getDonthavelevel();
-        symbolShiny = lang.getSymbolShiny();
         notallowshiny = lang.getNotallowshiny();
         notallowlegendary = lang.getNotallowlegendary();
         itemnotallowpokemon = lang.getItemnotallowpokemon();
@@ -143,6 +122,7 @@ public class Lang {
         messagePokemonTradeBlackList = lang.getMessagePokemonTradeBlackList();
         messageNoPoolView = lang.getMessageNoPoolView();
         messageisLegendaryOrShinyMessage = lang.getMessageisLegendaryOrShinyMessage();
+        messageThePokemonNotHaveMinLevel = lang.getMessageThePokemonNotHaveMinLevel();
         Pc = lang.getPc();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",
