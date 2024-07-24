@@ -54,7 +54,7 @@ public class WonderTradePC {
 
         LinkedPageButton next = LinkedPageButton.builder()
           .display(CobbleUtils.language.getItemNext().getItemStack())
-          .title(AdventureTranslator.toNative(CobbleUtils.language.getItemClose().getDisplayname()))
+          .title(AdventureTranslator.toNative(CobbleUtils.language.getItemNext().getDisplayname()))
           .linkType(LinkType.Next)
           .build();
 

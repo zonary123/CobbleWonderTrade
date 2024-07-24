@@ -13,6 +13,9 @@ dependencies {
     modImplementation("com.cobblemon:mod:${rootProject.cobblemon_version}")
     annotationProcessor("org.projectlombok:lombok:1.18.20")
     implementation("org.projectlombok:lombok:1.18.20")
+    // Datbase
+    implementation("org.mongodb:mongodb-driver:3.12.14")
+    // Dependencies for MongoDB
     modImplementation files("libs/CobbleUtils-common-1.0.7.jar")
     modImplementation(List.of(
             "net.kyori:examination-api:1.3.0",

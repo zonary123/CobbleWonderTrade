@@ -138,7 +138,7 @@ public class WonderTrade {
           .build();
       }
 
-      if ((pokemon.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) || CobbleWonderTrade.config.getLegends().contains(pokemon.showdownId())) {
+      if (pokemon.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) {
         return GooeyButton.builder()
           .display(CobbleWonderTrade.language.getItemnotallowlegendary().getItemStack())
           .title(AdventureTranslator.toNative(CobbleWonderTrade.language.getItemnotallowlegendary().getDisplayname()))

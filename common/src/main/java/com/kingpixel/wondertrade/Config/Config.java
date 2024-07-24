@@ -3,6 +3,7 @@ package com.kingpixel.wondertrade.Config;
 import com.google.gson.Gson;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.Manager.MongoDBDataBase;
 import lombok.Getter;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 @Getter
 public class Config {
   private String lang;
+  private MongoDBDataBase mongoDBDataBase;
   private int cooldown;
   private int cooldownmessage;
   private int sizePool;
@@ -38,6 +40,7 @@ public class Config {
 
   public Config() {
     lang = "en";
+    mongoDBDataBase = new MongoDBDataBase();
     cooldown = 30;
     cooldownmessage = 15;
     sizePool = 72;
@@ -67,6 +70,7 @@ public class Config {
         Gson gson = Utils.newGson();
         Config config = gson.fromJson(el, Config.class);
         lang = config.getLang();
+        mongoDBDataBase = config.getMongoDBDataBase();
         cooldown = config.getCooldown();
         cooldownmessage = config.getCooldownmessage();
         sizePool = config.getSizePool();
