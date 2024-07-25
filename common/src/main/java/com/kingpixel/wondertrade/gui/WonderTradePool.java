@@ -19,6 +19,7 @@ import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.cobbleutils.util.UIUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -26,19 +27,21 @@ import net.minecraft.world.item.Items;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Carlos Varas Alonso - 02/06/2024 2:19
  */
 public class WonderTradePool {
-  public static Page open(boolean special) {
+  public static Page open(boolean special) throws ExecutionException, InterruptedException {
     GooeyButton fill = GooeyButton.builder()
       .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
       .title("")
       .build();
     List<Button> buttons = new ArrayList<>();
 
-    List<Pokemon> pokemons = new ArrayList<>(CobbleWonderTrade.manager.getPokemonList(special));
+    List<Pokemon> pokemons = new ArrayList<>(DatabaseClientFactory.databaseClient.getSpecialPool(special).get());
+
     for (Pokemon p : pokemons) {
       GooeyButton pokemonButton = createPokemonButton(p);
       buttons.add(pokemonButton);

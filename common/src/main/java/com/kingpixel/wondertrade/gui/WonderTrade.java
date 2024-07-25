@@ -16,8 +16,11 @@ import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
@@ -35,10 +38,12 @@ public class WonderTrade {
         .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
         .title("")
         .build();
-      List<Pokemon> pokemons = new ArrayList<>();
-      CobbleWonderTrade.manager.getPokemonList().forEach(pokemon -> {
-        pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
-      });
+
+      UserInfo userInfo =
+        DatabaseClientFactory.databaseClient.getUserInfo((ServerPlayer) player).get();
+
+      List<Pokemon> pokemons = DatabaseClientFactory.databaseClient.getSpecialPool(false).get();
+
       PlayerPartyStore partyStore = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID());
 
       GooeyButton poke1 = createButtonPokemon(partyStore.get(0));
@@ -46,10 +51,11 @@ public class WonderTrade {
       GooeyButton poke3 = createButtonPokemon(partyStore.get(2));
 
       List<String> loreinfo = new ArrayList<>(CobbleWonderTrade.language.getInfo().getLore());
-      loreinfo.replaceAll(s -> s.replace("%time%", PlayerUtils.getCooldown(CobbleWonderTrade.manager.getUserInfo().get(player.getUUID()).getDate()))
+      loreinfo.replaceAll(s -> s.replace("%time%", PlayerUtils.getCooldown(userInfo.getDate()))
         .replace("%shinys%", pokemons.stream().filter(Pokemon::getShiny).count() + "")
-        .replace("%legends%",
-          pokemons.stream().filter(Pokemon::isLegendary).count() + ""));
+        .replace("%legends%", pokemons.stream().filter(Pokemon::isLegendary).count() + "")
+        .replace("%ultrabeast%", pokemons.stream().filter(Pokemon::isUltraBeast).count() + "")
+        .replace("%ivs%", pokemons.stream().filter(pokemon -> PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31).count() + ""));
 
       GooeyButton info = GooeyButton.builder()
         .display(CobbleWonderTrade.language.getInfo().getItemStack())
@@ -58,9 +64,21 @@ public class WonderTrade {
         .onClick(action -> {
           if (CobbleWonderTrade.config.isPoolview()) {
             if (action.getClickType() == ButtonClick.LEFT_CLICK) {
-              UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open(false)));
+              try {
+                UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open(false)));
+              } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
             } else {
-              UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open(true)));
+              try {
+                UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open(true)));
+              } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
             }
           } else {
             action.getPlayer().sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessageNoPoolView()
@@ -99,10 +117,11 @@ public class WonderTrade {
         .set(1, 6, poke5)
         .set(1, 7, poke6)
         .build();
+
       GooeyPage page = GooeyPage.builder().template(template).title(AdventureTranslator.toNative(CobbleWonderTrade.language.getTitle())).build();
       page.update();
       return page;
-    } catch (NoPokemonStoreException e) {
+    } catch (Exception e) {
       System.out.println(e);
       e.printStackTrace();
     }

@@ -1,33 +1,25 @@
 {
   "schemaVersion": 1,
-  "id": "aaaa",
-  "version": "${version}",
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "${mod_name}",
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "description": "${mod_description}",
   "authors": [
-    "Me!"
+    "${author}"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
   },
-  "license": "CC0-1.0",
-  "icon": "assets/wondertrade/icon.png",
-  "environment": "*",
   "entrypoints": {
     "main": [
       "com.kingpixel.fabric.wondertrade.WonderTradeFabric"
     ]
   },
+  "license": "${license}",
+  "environment": "*",
   "depends": {
-    "fabricloader": ">=0.15.11",
-    "minecraft": "~1.20.1",
-    "java": ">=17",
-    "architectury": ">=9.2.14",
-    "cobblemon": ">=1.5.0",
-    "fabric-api": "*"
-  },
-  "suggests": {
-    "another-mod": "*"
+    "fabricloader": "*",
+    "fabric": "*",
+    "minecraft": "1.20.1",
+    "cobblemon": ">=1.5.0"
   }
 }

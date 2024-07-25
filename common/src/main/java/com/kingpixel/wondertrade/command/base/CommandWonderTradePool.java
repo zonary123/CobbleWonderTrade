@@ -12,6 +12,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Carlos Varas Alonso - 02/06/2024 2:18
@@ -30,7 +31,13 @@ public class CommandWonderTradePool implements Command<CommandSourceStack> {
       return 0;
     }
     if (CobbleWonderTrade.config.isPoolview()) {
-      UIManager.openUIForcefully(Objects.requireNonNull(CobbleWonderTrade.server.getPlayerList().getPlayer(player.getUUID())), WonderTradePool.open(false));
+      try {
+        UIManager.openUIForcefully(Objects.requireNonNull(CobbleWonderTrade.server.getPlayerList().getPlayer(player.getUUID())), WonderTradePool.open(false));
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
     } else {
       player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessageNoPoolView()
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));

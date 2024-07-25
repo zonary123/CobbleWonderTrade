@@ -5,26 +5,32 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.DataBaseType;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Carlos Varas Alonso - 29/04/2024 1:31
  */
 @Getter
+@Setter
 @ToString
 public class WonderTradeManager {
   private HashMap<UUID, UserInfo> userInfo;
   private List<JsonObject> pokemonList;
 
-  public CharSequence getCooldown(UUID uuid) {
-    UserInfo userInfo = this.userInfo.get(uuid);
+  public CharSequence getCooldown(UUID uuid) throws ExecutionException, InterruptedException {
+    UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserinfo(uuid).get();
 
     Date now = new Date();
 
@@ -37,33 +43,24 @@ public class WonderTradeManager {
     return String.format("%d days, %d hours, %d minutes, %d seconds", diffDays, diffHours, diffMinutes, diffSeconds);
   }
 
-  public List<Pokemon> getPokemonList(boolean special) {
-    List<Pokemon> pokemons = new ArrayList<>();
-    for (JsonObject jsonObject : pokemonList) {
-      Pokemon pokemon = Pokemon.Companion.loadFromJSON(jsonObject);
-      if (!special) {
-        pokemons.add(pokemon);
-      } else {
-        if (pokemon.getShiny() || pokemon.isLegendary() || pokemon.isUltraBeast()) {
-          pokemons.add(pokemon);
-        }
-      }
-    }
-    return pokemons;
-  }
-
   public WonderTradeManager() {
     userInfo = new HashMap<>();
     pokemonList = new ArrayList<>();
   }
 
 
-  public void addPlayer(Entity player) {
-    userInfo.putIfAbsent(player.getUUID(), new UserInfo(new Date()));
+  public void addPlayer(ServerPlayer player) {
+    userInfo.putIfAbsent(player.getUUID(), new UserInfo(player.getUUID()));
   }
 
   public void init() {
-    if (CobbleWonderTrade.config.isSavepool()) {
+    DatabaseClientFactory.createDatabaseClient(CobbleWonderTrade.config.getDatabaseType(),
+      CobbleWonderTrade.config.getDatabaseConfig().getUrl(),
+      CobbleWonderTrade.config.getDatabaseConfig().getDatabase(),
+      CobbleWonderTrade.config.getDatabaseConfig().getUser(),
+      CobbleWonderTrade.config.getDatabaseConfig().getPassword());
+
+    if (DatabaseClientFactory.type == DataBaseType.JSON) {
       CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
         el -> {
           Gson gson = Utils.newWithoutSpacingGson();
@@ -73,7 +70,13 @@ public class WonderTradeManager {
 
       futureRead.thenRun(() -> {
         if (pokemonList.isEmpty()) {
-          generatePokemonList();
+          try {
+            generatePokemonList();
+          } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          }
           Gson gson = Utils.newWithoutSpacingGson();
           String data = gson.toJson(this);
           CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", data);
@@ -87,7 +90,13 @@ public class WonderTradeManager {
         }
       }).exceptionally(ex -> {
         CobbleWonderTrade.LOGGER.info("No pool.json file found for " + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
-        generatePokemonList();
+        try {
+          generatePokemonList();
+        } catch (ExecutionException e) {
+          throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
         Gson gson = Utils.newWithoutSpacingGson();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", data);
@@ -96,12 +105,8 @@ public class WonderTradeManager {
         }
         return null;
       });
-    } else {
-      generatePokemonList();
-      for (ServerPlayer player : CobbleWonderTrade.server.getPlayerList().getPlayers()) {
-        addPlayer(player);
-      }
     }
+    DatabaseClientFactory.databaseClient.resetPool();
   }
 
 
@@ -118,31 +123,24 @@ public class WonderTradeManager {
     }
   }
 
-  public void resetPool() {
-    if (pokemonList.size() == CobbleWonderTrade.config.getSizePool()) return;
-    if (pokemonList.size() > CobbleWonderTrade.config.getSizePool()) {
-      pokemonList = pokemonList.subList(0, CobbleWonderTrade.config.getSizePool());
-    } else {
-      for (int i = pokemonList.size(); i < CobbleWonderTrade.config.getSizePool(); i++) {
-        pokemonList.add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
-      }
-    }
-    writeInfo();
-  }
 
-  public void generatePokemonList() {
-    pokemonList.clear();
+  public void generatePokemonList() throws ExecutionException, InterruptedException {
+    DatabaseClientFactory.databaseClient.getPokemonList(false).get().clear();
     for (int i = 0; i < CobbleWonderTrade.config.getSizePool(); i++) {
-      pokemonList.add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
+      DatabaseClientFactory.databaseClient.getPokemonList(false).get().add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
     }
-    writeInfo();
+    if (CobbleWonderTrade.config.getDatabaseType() == DataBaseType.JSON) {
+      writeInfo();
+    } else {
+      DatabaseClientFactory.databaseClient.save();
+    }
   }
 
   public void addPlayerWithDate(Entity player, int minutes) {
     Calendar calendar = Calendar.getInstance();
     calendar.add(Calendar.MINUTE, minutes);
     Date futureDate = calendar.getTime();
-    userInfo.put(player.getUUID(), new UserInfo(futureDate));
+    userInfo.put(player.getUUID(), new UserInfo(player.getUUID(), futureDate));
   }
 
   public Pokemon putPokemon(Pokemon pokemon) {
@@ -153,9 +151,10 @@ public class WonderTradeManager {
   }
 
 
-  public boolean hasCooldownEnded(Entity player) {
-    UserInfo userDate = userInfo.get(player.getUUID());
+  public boolean hasCooldownEnded(ServerPlayer player) throws ExecutionException, InterruptedException {
+    UserInfo userDate = DatabaseClientFactory.databaseClient.getUserinfo(player.getUUID()).get();
     if (userDate == null) {
+      CobbleWonderTrade.LOGGER.error("User " + player.getUUID() + " not found in the database.");
       return true; // No cooldown was set for this player
     }
 
@@ -163,36 +162,12 @@ public class WonderTradeManager {
     return now.after(userDate.getDate()); // Returns true if the current date is after the user's date
   }
 
-  public Pokemon getRandomPokemon() {
+  public Pokemon getRandomPokemon() throws ExecutionException, InterruptedException {
     int randomIndex = new Random().nextInt(pokemonList.size());
     Pokemon randomPokemon = Pokemon.Companion.loadFromJSON(pokemonList.get(randomIndex));
     pokemonList.set(randomIndex, WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
     return randomPokemon;
   }
 
-  public static class UserInfo {
-    private boolean messagesend;
-    private Date date;
 
-    public UserInfo(Date date) {
-      this.date = date;
-      this.messagesend = false;
-    }
-
-    public boolean isMessagesend() {
-      return messagesend;
-    }
-
-    public Date getDate() {
-      return date;
-    }
-
-    public void setMessagesend(boolean messagesend) {
-      this.messagesend = messagesend;
-    }
-
-    public void setDate(Date date) {
-      this.date = date;
-    }
-  }
 }

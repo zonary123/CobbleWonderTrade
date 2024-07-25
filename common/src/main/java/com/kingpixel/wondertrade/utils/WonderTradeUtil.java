@@ -10,10 +10,12 @@ import com.cobblemon.mod.common.pokemon.Species;
 import com.kingpixel.cobbleutils.util.AdventureTranslator;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -89,7 +91,7 @@ public class WonderTradeUtil {
   }
 
 
-  public static Pokemon getRandomPokemon() {
+  public static Pokemon getRandomPokemon() throws ExecutionException, InterruptedException {
     Pokemon pokemon = new Pokemon();
     pokemon.createPokemonProperties(PokemonPropertyExtractor.ALL);
 
@@ -98,9 +100,11 @@ public class WonderTradeUtil {
 
     Set<String> generatedPokemonNames = new HashSet<>();
     List<Pokemon> arraypokemons = new ArrayList<>();
-    CobbleWonderTrade.manager.getPokemonList().forEach(pokemon1 -> {
+
+    DatabaseClientFactory.databaseClient.getPokemonList(false).get().forEach(pokemon1 -> {
       arraypokemons.add(Pokemon.Companion.loadFromJSON(pokemon1));
     });
+
     arraypokemons.forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().showdownId()));
 
     do {

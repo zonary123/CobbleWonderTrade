@@ -5,13 +5,14 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.util.AdventureTranslator;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.Manager.WonderTradeManager;
 import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.base.CommandWonderTrade;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradeOther;
 import com.kingpixel.wondertrade.command.base.CommandWonderTradePool;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import com.kingpixel.wondertrade.gui.WonderTradeConfirm;
 import com.kingpixel.wondertrade.gui.WonderTradePC;
+import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -21,7 +22,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
@@ -94,7 +94,7 @@ public class CommandTree {
               player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
               return 0;
             }
-            CobbleWonderTrade.manager.getUserInfo().put(player.getUUID(), new WonderTradeManager.UserInfo(new Date()));
+            DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), false);
             return 1;
           })
           .then(Commands.argument("player", EntityArgument.player())
@@ -105,7 +105,7 @@ public class CommandTree {
                 player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
                 return 0;
               }
-              CobbleWonderTrade.manager.getUserInfo().put(player.getUUID(), new WonderTradeManager.UserInfo(new Date()));
+              DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), false);
               return 1;
             })
           )
@@ -186,11 +186,12 @@ public class CommandTree {
             Commands.literal("reset")
               .requires(source -> source.hasPermission(2))
               .executes(context -> {
-                CobbleWonderTrade.manager.generatePokemonList();
+                DatabaseClientFactory.databaseClient.resetPool();
                 return 1;
               })
           )
       );
+
     }
   }
 }

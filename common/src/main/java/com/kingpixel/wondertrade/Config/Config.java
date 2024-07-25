@@ -3,7 +3,8 @@ package com.kingpixel.wondertrade.Config;
 import com.google.gson.Gson;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.Manager.MongoDBDataBase;
+import com.kingpixel.wondertrade.database.DataBaseType;
+import com.kingpixel.wondertrade.model.DataBaseData;
 import lombok.Getter;
 
 import java.util.List;
@@ -15,8 +16,10 @@ import java.util.concurrent.CompletableFuture;
  */
 @Getter
 public class Config {
+  private boolean debug;
   private String lang;
-  private MongoDBDataBase mongoDBDataBase;
+  private DataBaseType databaseType;
+  private DataBaseData databaseConfig;
   private int cooldown;
   private int cooldownmessage;
   private int sizePool;
@@ -39,8 +42,10 @@ public class Config {
   private List<String> aliases;
 
   public Config() {
+    debug = false;
     lang = "en";
-    mongoDBDataBase = new MongoDBDataBase();
+    databaseType = DataBaseType.JSON;
+    databaseConfig = new DataBaseData();
     cooldown = 30;
     cooldownmessage = 15;
     sizePool = 72;
@@ -61,7 +66,7 @@ public class Config {
     poketradeblacklist = List.of("Magikarp");
     legends = List.of("Magikarp");
     aliases = List.of("wt", "wondertrade");
-    //forms = Map.of("hisui", "&f(&eHisuian&f)");
+
   }
 
   public void init() {
@@ -69,8 +74,10 @@ public class Config {
       el -> {
         Gson gson = Utils.newGson();
         Config config = gson.fromJson(el, Config.class);
+        debug = config.isDebug();
         lang = config.getLang();
-        mongoDBDataBase = config.getMongoDBDataBase();
+        databaseType = config.getDatabaseType();
+        databaseConfig = config.getDatabaseConfig();
         cooldown = config.getCooldown();
         cooldownmessage = config.getCooldownmessage();
         sizePool = config.getSizePool();

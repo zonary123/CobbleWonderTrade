@@ -15,11 +15,14 @@ import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Carlos Varas Alonso - 26/05/2024 16:17
@@ -43,6 +46,10 @@ public class WonderTradeConfirm {
         } catch (NoPokemonStoreException e) {
           System.out.println(e);
           e.printStackTrace();
+        } catch (ExecutionException e) {
+          throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
         }
       })
       .build();
@@ -80,18 +87,21 @@ public class WonderTradeConfirm {
     return page;
   }
 
-  public static boolean trade(Player player, Pokemon pokemonplayer) throws NoPokemonStoreException {
+  public static boolean trade(ServerPlayer player, Pokemon pokemonplayer) throws NoPokemonStoreException, ExecutionException, InterruptedException {
     if (!CobbleWonderTrade.manager.hasCooldownEnded(player)) {
       player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessagewondertradecooldown()
-        .replace("%time%", PlayerUtils.getCooldown(CobbleWonderTrade.manager.getUserInfo().get(player.getUUID()).getDate()))
+        .replace("%time%",
+          PlayerUtils.getCooldown(DatabaseClientFactory.databaseClient.getUserInfo(player).get().getDate()))
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
+
     if (pokemonplayer == null) {
       player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessageNoPokemonSlot()
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
+
     if (pokemonplayer.getShiny() && !CobbleWonderTrade.config.isAllowshiny()) return false;
     if (pokemonplayer.isLegendary() && !CobbleWonderTrade.config.isAllowlegendary()) return false;
     if (pokemonplayer.getLevel() < CobbleWonderTrade.config.getMinlvreq()) return false;
@@ -104,13 +114,8 @@ public class WonderTradeConfirm {
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
-    Pokemon pokemongive;
 
-    if (!CobbleWonderTrade.config.isIsrandom()) {
-      pokemongive = CobbleWonderTrade.manager.putPokemon(pokemonplayer);
-    } else {
-      pokemongive = CobbleWonderTrade.manager.getRandomPokemon();
-    }
+    Pokemon pokemongive = DatabaseClientFactory.databaseClient.putPokemon(pokemonplayer).get();
 
     if (!CobbleWonderTrade.config.isIsrandom()) {
       if (pokemongive == null) return false;
@@ -149,9 +154,9 @@ public class WonderTradeConfirm {
     player.sendSystemMessage(WonderTradeUtil.toNative(PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(),
       pokemongive))
     );
-    CobbleWonderTrade.manager.getUserInfo().get(player.getUUID()).setMessagesend(false);
-    CobbleWonderTrade.manager.addPlayerWithDate(player, CobbleWonderTrade.config.getCooldown());
-    CobbleWonderTrade.manager.writeInfo();
+    UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player).get();
+    userInfo.setMessagesend(false);
+    DatabaseClientFactory.databaseClient.putUserInfo(userInfo);
     return true;
   }
 }

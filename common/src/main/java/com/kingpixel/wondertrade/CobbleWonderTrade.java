@@ -8,6 +8,8 @@ import com.kingpixel.wondertrade.Manager.WonderTradeConfig;
 import com.kingpixel.wondertrade.Manager.WonderTradeManager;
 import com.kingpixel.wondertrade.Manager.WonderTradePermission;
 import com.kingpixel.wondertrade.command.CommandTree;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.SpawnRates;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
@@ -19,10 +21,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author Carlos Varas Alonso - 28/04/2024 23:50
@@ -54,15 +53,20 @@ public class CobbleWonderTrade {
     spawnRates.init();
     WonderTradeUtil.init();
     manager.init();
-    manager.resetPool();
     tasks();
   }
 
   private static void events() {
+    files();
+
     CommandRegistrationEvent.EVENT.register((dispatcher, registry, selection) -> CommandTree.register(dispatcher));
+
     LifecycleEvent.SERVER_STARTED.register(server -> load());
+
     PlayerEvent.PLAYER_JOIN.register(player -> manager.addPlayer(player));
+
     LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> server = level.getLevel().getServer());
+
     LifecycleEvent.SERVER_STOPPING.register((server) -> {
       tasks.forEach(task -> task.cancel(true));
       tasks.clear();
@@ -87,9 +91,13 @@ public class CobbleWonderTrade {
     ScheduledFuture<?> broadcastTask = scheduler.scheduleAtFixedRate(() -> {
       if (server != null) {
         List<Pokemon> pokemons = new ArrayList<>();
-        manager.getPokemonList().forEach(pokemon -> {
-          pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
-        });
+        try {
+          DatabaseClientFactory.databaseClient.getPokemonList(false).get().forEach(pokemon -> {
+            pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
+          });
+        } catch (InterruptedException | ExecutionException e) {
+          throw new RuntimeException(e);
+        }
         WonderTradeUtil.messagePool(pokemons);
       }
     }, CobbleWonderTrade.config.getCooldownmessage(), CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
@@ -98,12 +106,23 @@ public class CobbleWonderTrade {
     ScheduledFuture<?> playerCheckTask = scheduler.scheduleAtFixedRate(() -> {
       if (server != null) {
         server.getPlayerList().getPlayers().forEach(player -> {
-          if (manager.hasCooldownEnded(player) && !manager.getUserInfo().get(player.getUUID()).isMessagesend()) {
-            manager.getUserInfo().get(player.getUUID()).setMessagesend(true);
-            player.sendSystemMessage(AdventureTranslator.toNative(language.getMessagewondertradeready()
-              .replace("%prefix%",
-                language.getPrefix()
-              )));
+          UserInfo userInfo;
+          try {
+            userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player).get();
+          } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+          }
+          try {
+            if (manager.hasCooldownEnded(player) && !userInfo.isMessagesend()) {
+              userInfo.setMessagesend(true);
+              DatabaseClientFactory.databaseClient.getUserinfo(player.getUUID());
+              player.sendSystemMessage(AdventureTranslator.toNative(language.getMessagewondertradeready()
+                .replace("%prefix%",
+                  language.getPrefix()
+                )));
+            }
+          } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
           }
         });
       }
