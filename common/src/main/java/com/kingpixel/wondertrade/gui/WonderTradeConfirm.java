@@ -21,6 +21,8 @@ import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
@@ -46,9 +48,7 @@ public class WonderTradeConfirm {
         } catch (NoPokemonStoreException e) {
           System.out.println(e);
           e.printStackTrace();
-        } catch (ExecutionException e) {
-          throw new RuntimeException(e);
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
           throw new RuntimeException(e);
         }
       })
@@ -132,12 +132,10 @@ public class WonderTradeConfirm {
     }
 
     if (CobbleWonderTrade.config.isEmitcapture()) {
-      // Pasarlo a un evento de wondertrade mejor
       WonderTradeUtil.emiteventcaptured(pokemonplayer, player);
       WonderTradeUtil.emiteventcaptured(pokemongive, player);
     }
 
-    // Mensaje pokemon metido en el wondertrade
     if (!CobbleWonderTrade.config.isIsrandom()) {
       WonderTradeUtil.broadcast(PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
         .replace("%player%", player.getGameProfile().getName())
@@ -150,12 +148,18 @@ public class WonderTradeConfirm {
         );
       }
     }
-    // Mensaje pokemon recibido
+
     player.sendSystemMessage(WonderTradeUtil.toNative(PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(),
       pokemongive))
     );
+
     UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player).get();
     userInfo.setMessagesend(false);
+    Calendar calendar = Calendar.getInstance();
+    calendar.add(Calendar.MINUTE, CobbleWonderTrade.config.getCooldown());
+    Date futureDate = calendar.getTime();
+    userInfo.setDate(futureDate);
+
     DatabaseClientFactory.databaseClient.putUserInfo(userInfo);
     return true;
   }

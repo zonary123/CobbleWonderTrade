@@ -66,17 +66,13 @@ public class WonderTrade {
             if (action.getClickType() == ButtonClick.LEFT_CLICK) {
               try {
                 UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open(false)));
-              } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-              } catch (InterruptedException e) {
+              } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
               }
             } else {
               try {
                 UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePool.open(true)));
-              } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-              } catch (InterruptedException e) {
+              } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
               }
             }
@@ -94,9 +90,7 @@ public class WonderTrade {
         .onClick(action -> {
           try {
             UIManager.openUIForcefully(action.getPlayer(), Objects.requireNonNull(WonderTradePC.open(action.getPlayer())));
-          } catch (ExecutionException e) {
-            e.printStackTrace();
-          } catch (InterruptedException e) {
+          } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
           }
         })

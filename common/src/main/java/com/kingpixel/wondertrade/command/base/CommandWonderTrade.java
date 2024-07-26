@@ -30,7 +30,6 @@ public class CommandWonderTrade implements Command<CommandSourceStack> {
       player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
       return 0;
     }
-    if (player == null) return 0;
     try {
       UIManager.openUIForcefully(Objects.requireNonNull(CobbleWonderTrade.server.getPlayerList().getPlayer(player.getUUID())), Objects.requireNonNull(WonderTrade.open(player)));
     } catch (NoPokemonStoreException e) {

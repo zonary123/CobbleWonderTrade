@@ -33,9 +33,7 @@ public class CommandWonderTradePool implements Command<CommandSourceStack> {
     if (CobbleWonderTrade.config.isPoolview()) {
       try {
         UIManager.openUIForcefully(Objects.requireNonNull(CobbleWonderTrade.server.getPlayerList().getPlayer(player.getUUID())), WonderTradePool.open(false));
-      } catch (ExecutionException e) {
-        throw new RuntimeException(e);
-      } catch (InterruptedException e) {
+      } catch (ExecutionException | InterruptedException e) {
         throw new RuntimeException(e);
       }
     } else {

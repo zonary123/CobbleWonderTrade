@@ -1,4 +1,4 @@
-package com.kingpixel.wondertrade.database;
+package com.kingpixel.wondertrade.database.mongodb;
 
 import org.reactivestreams.Publisher;
 

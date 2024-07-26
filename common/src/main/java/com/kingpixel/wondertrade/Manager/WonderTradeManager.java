@@ -1,6 +1,5 @@
 package com.kingpixel.wondertrade.Manager;
 
-import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.kingpixel.cobbleutils.util.Utils;
@@ -13,7 +12,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -28,20 +26,6 @@ import java.util.concurrent.ExecutionException;
 public class WonderTradeManager {
   private HashMap<UUID, UserInfo> userInfo;
   private List<JsonObject> pokemonList;
-
-  public CharSequence getCooldown(UUID uuid) throws ExecutionException, InterruptedException {
-    UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserinfo(uuid).get();
-
-    Date now = new Date();
-
-    long diff = userInfo.getDate().getTime() - now.getTime();
-    long diffSeconds = diff / 1000 % 60;
-    long diffMinutes = diff / (60 * 1000) % 60;
-    long diffHours = diff / (60 * 60 * 1000) % 24;
-    long diffDays = diff / (24 * 60 * 60 * 1000);
-
-    return String.format("%d days, %d hours, %d minutes, %d seconds", diffDays, diffHours, diffMinutes, diffSeconds);
-  }
 
   public WonderTradeManager() {
     userInfo = new HashMap<>();
@@ -72,9 +56,7 @@ public class WonderTradeManager {
         if (pokemonList.isEmpty()) {
           try {
             generatePokemonList();
-          } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-          } catch (InterruptedException e) {
+          } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
           }
           Gson gson = Utils.newWithoutSpacingGson();
@@ -92,9 +74,7 @@ public class WonderTradeManager {
         CobbleWonderTrade.LOGGER.info("No pool.json file found for " + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
         try {
           generatePokemonList();
-        } catch (ExecutionException e) {
-          throw new RuntimeException(e);
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
           throw new RuntimeException(e);
         }
         Gson gson = Utils.newWithoutSpacingGson();
@@ -136,37 +116,16 @@ public class WonderTradeManager {
     }
   }
 
-  public void addPlayerWithDate(Entity player, int minutes) {
-    Calendar calendar = Calendar.getInstance();
-    calendar.add(Calendar.MINUTE, minutes);
-    Date futureDate = calendar.getTime();
-    userInfo.put(player.getUUID(), new UserInfo(player.getUUID(), futureDate));
-  }
-
-  public Pokemon putPokemon(Pokemon pokemon) {
-    int randomIndex = new Random().nextInt(pokemonList.size());
-    Pokemon oldPokemon = Pokemon.Companion.loadFromJSON(pokemonList.get(randomIndex));
-    pokemonList.set(randomIndex, pokemon.saveToJSON(new JsonObject()));
-    return oldPokemon;
-  }
-
 
   public boolean hasCooldownEnded(ServerPlayer player) throws ExecutionException, InterruptedException {
     UserInfo userDate = DatabaseClientFactory.databaseClient.getUserinfo(player.getUUID()).get();
     if (userDate == null) {
       CobbleWonderTrade.LOGGER.error("User " + player.getUUID() + " not found in the database.");
-      return true; // No cooldown was set for this player
+      return true;
     }
 
     Date now = new Date();
-    return now.after(userDate.getDate()); // Returns true if the current date is after the user's date
-  }
-
-  public Pokemon getRandomPokemon() throws ExecutionException, InterruptedException {
-    int randomIndex = new Random().nextInt(pokemonList.size());
-    Pokemon randomPokemon = Pokemon.Companion.loadFromJSON(pokemonList.get(randomIndex));
-    pokemonList.set(randomIndex, WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
-    return randomPokemon;
+    return now.after(userDate.getDate());
   }
 
 

@@ -54,7 +54,6 @@ public class UserInfo {
   public static UserInfo fromDocument(Document document) {
     UserInfo userInfo = new UserInfo();
 
-    // Asegúrate de que los campos existan en el documento
     if (document.containsKey("playeruuid")) {
       userInfo.setPlayeruuid(UUID.fromString(document.getString("playeruuid")));
     } else {

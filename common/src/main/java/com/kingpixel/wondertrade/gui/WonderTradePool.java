@@ -96,7 +96,7 @@ public class WonderTradePool {
       return pokemonButton;
     } catch (Exception e) {
       CobbleWonderTrade.LOGGER.error("Error al crear el botón de Pokémon: ", e);
-      // Devuelve un botón de error si algo sale mal
+
       return GooeyButton.builder()
         .display(new ItemStack(Items.BARRIER))
         .title("Error")

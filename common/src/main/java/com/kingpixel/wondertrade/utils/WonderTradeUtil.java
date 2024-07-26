@@ -29,14 +29,12 @@ public class WonderTradeUtil {
     Collection<Species> species = PokemonSpecies.INSTANCE.getSpecies();
     Set<String> pokeBlacklist = new HashSet<>(CobbleWonderTrade.config.getPokeblacklist());
 
-    // Primero filtramos los Pokémon que no deben estar en la lista principal
     List<Species> filteredSpecies = species.stream()
       .filter(species1 -> species1.getNationalPokedexNumber() != 9999)
       .filter(species1 -> !pokeBlacklist.contains(species1.showdownId()))
       .sorted(Comparator.comparingInt(Species::getNationalPokedexNumber))
       .toList();
 
-    // Luego particionamos en legendarios y no legendarios
     Map<Boolean, List<Species>> sortedSpecies = filteredSpecies.stream()
       .collect(Collectors.partitioningBy(species1 -> {
         Pokemon p = new Pokemon();
@@ -45,7 +43,6 @@ public class WonderTradeUtil {
         return isLegendary;
       }));
 
-    // Filtramos los no legendarios con rareza -1
     pokemons = new ArrayList<>(sortedSpecies.get(false).stream()
       .filter(species1 -> CobbleWonderTrade.spawnRates.getRarity(species1) != -1)
       .toList());
@@ -107,22 +104,21 @@ public class WonderTradeUtil {
 
     arraypokemons.forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().showdownId()));
 
-    do {
-      if (shinyR == 0) {
-        pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
-        pokemon.setShiny(true);
-      } else {
-        pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
-        pokemon.setShiny(false);
-      }
 
-      if (legendaryR == 0) {
-        pokemon.setSpecies(legendarys.get(RANDOM.nextInt(legendarys.size())));
-        if (shinyR == 0) {
-          pokemon.setShiny(true);
-        }
+    if (shinyR == 0) {
+      pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
+      pokemon.setShiny(true);
+    } else {
+      pokemon.setSpecies(pokemons.get(RANDOM.nextInt(pokemons.size())));
+      pokemon.setShiny(false);
+    }
+
+    if (legendaryR == 0) {
+      pokemon.setSpecies(legendarys.get(RANDOM.nextInt(legendarys.size())));
+      if (shinyR == 0) {
+        pokemon.setShiny(true);
       }
-    } while (generatedPokemonNames.contains(pokemon.getSpecies().showdownId()));
+    }
 
     generatedPokemonNames.add(pokemon.getSpecies().showdownId());
     pokemon.setLevel(RANDOM.nextInt(CobbleWonderTrade.config.getMaxlv() - CobbleWonderTrade.config.getMinlv()) + CobbleWonderTrade.config.getMinlv());

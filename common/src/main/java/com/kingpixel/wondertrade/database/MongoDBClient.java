@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.google.gson.JsonObject;
 import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.mongodb.DocumentConverter;
 import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import com.mongodb.client.model.Filters;
@@ -20,7 +21,10 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -281,29 +285,17 @@ public class MongoDBClient implements DatabaseClient {
   public CompletableFuture<UserInfo> updateUserInfo(UserInfo userInfo) {
     return CompletableFuture.supplyAsync(() -> {
       try {
-        // Actualiza los campos del userInfo
-        userInfo.setMessagesend(false);
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, CobbleWonderTrade.config.getCooldown());
-        Date futureDate = calendar.getTime();
-        userInfo.setDate(futureDate);
-
-        // Crea el filtro para buscar el documento por `playeruuid`
         Bson filter = Filters.eq("playeruuid", userInfo.getPlayeruuid().toString());
 
-        // Crea la operación de actualización
         Bson updateOperation = Updates.combine(
           Updates.set("messagesend", userInfo.isMessagesend()),
           Updates.set("date", UserInfo.getDateWithCooldown())
         );
 
-        // Opciones para el upsert (actualización o inserción)
         UpdateOptions options = new UpdateOptions().upsert(true);
 
-        // Ejecuta la actualización o inserción
         var result = toCompletableFuture(users.updateOne(filter, updateOperation, options)).join();
 
-        // Verifica si la actualización fue exitosa
         if (result.getMatchedCount() == 0 && result.getUpsertedId() == null) {
           throw new RuntimeException("No document matched the filter and no new document was inserted.");
         }
@@ -314,7 +306,7 @@ public class MongoDBClient implements DatabaseClient {
 
         return userInfo;
       } catch (Exception e) {
-        e.printStackTrace(); // Imprime la traza de la pila para ayudar a la depuración
+        e.printStackTrace();
         throw new RuntimeException("Error updating or inserting userInfo", e);
       }
     });
@@ -325,9 +317,8 @@ public class MongoDBClient implements DatabaseClient {
   public void resetPool() {
     try {
       if (getSpecialPool(false).get().size() == CobbleWonderTrade.config.getSizePool()) return;
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    } catch (ExecutionException e) {
+
+    } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
 
@@ -336,7 +327,7 @@ public class MongoDBClient implements DatabaseClient {
         int targetSize = CobbleWonderTrade.config.getSizePool();
 
         if (count == targetSize) {
-          return CompletableFuture.completedFuture(null); // No need to change anything
+          return CompletableFuture.completedFuture(null);
         }
 
         return toCompletableFutureList(pool.find())
@@ -388,6 +379,6 @@ public class MongoDBClient implements DatabaseClient {
 
   @Override
   public void save() {
-    // No se requiere implementación para MongoDBClient
+
   }
 }

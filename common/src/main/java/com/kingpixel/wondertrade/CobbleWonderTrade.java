@@ -70,6 +70,7 @@ public class CobbleWonderTrade {
     LifecycleEvent.SERVER_STOPPING.register((server) -> {
       tasks.forEach(task -> task.cancel(true));
       tasks.clear();
+      DatabaseClientFactory.databaseClient.disconnect();
       LOGGER.info("Stopping " + MOD_NAME);
     });
 
@@ -109,13 +110,9 @@ public class CobbleWonderTrade {
           UserInfo userInfo;
           try {
             userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player).get();
-          } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-          }
-          try {
             if (manager.hasCooldownEnded(player) && !userInfo.isMessagesend()) {
               userInfo.setMessagesend(true);
-              DatabaseClientFactory.databaseClient.getUserinfo(player.getUUID());
+              DatabaseClientFactory.databaseClient.putUserInfo(userInfo, true);
               player.sendSystemMessage(AdventureTranslator.toNative(language.getMessagewondertradeready()
                 .replace("%prefix%",
                   language.getPrefix()

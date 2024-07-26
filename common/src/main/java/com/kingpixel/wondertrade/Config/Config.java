@@ -96,7 +96,6 @@ public class Config {
         allowlegendary = config.isAllowlegendary();
         legends = config.getLegends();
         poketradeblacklist = config.getPoketradeblacklist();
-        // forms = config.getForms();
         poolview = config.isPoolview();
         savepool = config.isSavepool();
 
