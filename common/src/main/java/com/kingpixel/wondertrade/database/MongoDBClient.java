@@ -255,7 +255,7 @@ public class MongoDBClient implements DatabaseClient {
       // Actualiza el documento si existe
       return updateUserInfo(userInfo);
     } else {
-      userInfo.setDate(new Date(1));
+      userInfo.setDate(new Date(1).getTime());
       return toCompletableFuture(users.find(new Document("playeruuid", userInfo.getPlayeruuid().toString())).first())
         .thenCompose(existingDoc -> {
           if (existingDoc != null) {

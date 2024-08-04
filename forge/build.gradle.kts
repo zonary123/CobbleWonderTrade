@@ -1,3 +1,9 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
+
+val common: Configuration by configurations.creating
+val shadowCommon: Configuration by configurations.creating
+//val developmentForge: Configuration by configurations.getting
+
 plugins {
     id("dev.architectury.loom")
     id("architectury-plugin")
@@ -10,8 +16,8 @@ architectury {
 }
 
 configurations {
-    create("common")
-    create("shadowCommon")
+    //create("common")
+    //create("shadowCommon")
     compileClasspath.get().extendsFrom(configurations["common"])
     runtimeClasspath.get().extendsFrom(configurations["common"])
     getByName("developmentForge").extendsFrom(configurations["common"])
@@ -37,10 +43,13 @@ dependencies {
 
     modImplementation("com.cobblemon:forge:${property("cobblemon_version")}")
     implementation("thedarkcolour:kotlinforforge:4.4.0")
+
+    shadowCommon("org.mongodb:mongodb-driver-reactivestreams:5.1.2")
+    //shadowCommon("org.reactivestreams:reactive-streams:1.0.3")
+
     listOf(
         "org.mongodb:mongodb-driver-reactivestreams:5.1.2",
-        "org.slf4j:slf4j-api:2.0.0",
-        "org.slf4j:slf4j-simple:2.0.0"
+        //"org.reactivestreams:reactive-streams:1.0.3",
     ).forEach {
         include(it)
     }
@@ -79,7 +88,18 @@ tasks {
 
     shadowJar {
         exclude("fabric.mod.json")
+        exclude("architectury.common.json")
+        exclude("com/google/gson/**/*")
+        exclude("org/intellij/**/*")
+        exclude("org/jetbrains/**/*")
         exclude("generations/gg/generations/core/generationscore/forge/datagen/**")
+        
+        relocate("org.reactivestreams", "com.kingpixel.wondertrade.reactivestreams")
+        relocate("com.mongodb", "com.kingpixel.wondertrade.mongodb")
+        relocate("org.bson", "com.kingpixel.wondertrade.bson")
+
+        transformers.add(ServiceFileTransformer())
+
         configurations = listOf(project.configurations.getByName("shadowCommon"))
         archiveClassifier.set("dev-shadow")
     }

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class UserInfo {
   private UUID playeruuid;
   private boolean messagesend;
-  private Date date;
+  private long date;
 
   public UserInfo() {
 
@@ -28,20 +28,20 @@ public class UserInfo {
   public UserInfo(UUID playeruuid) {
     this.playeruuid = playeruuid;
     this.messagesend = false;
-    this.date = new Date(1);
+    this.date = new Date(1).getTime();
   }
 
 
   public UserInfo(UUID uuid, Date futureDate) {
     this.playeruuid = uuid;
     this.messagesend = false;
-    this.date = futureDate;
+    this.date = futureDate.getTime();
   }
 
   public UserInfo(UUID playeruuid, boolean messagesend, Date date) {
     this.playeruuid = playeruuid;
     this.messagesend = messagesend;
-    this.date = date;
+    this.date = date.getTime();
   }
 
   public static Date getDateWithCooldown() {
@@ -67,12 +67,7 @@ public class UserInfo {
     }
 
     if (document.containsKey("date")) {
-      Object dateObj = document.get("date");
-      if (dateObj instanceof Date) {
-        userInfo.setDate((Date) dateObj);
-      } else {
-        throw new IllegalArgumentException("Date field in document is not of type Date");
-      }
+      userInfo.setDate(document.getLong("date"));
     } else {
       throw new IllegalArgumentException("Document does not contain date field");
     }

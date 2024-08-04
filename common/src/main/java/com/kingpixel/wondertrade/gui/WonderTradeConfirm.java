@@ -91,7 +91,7 @@ public class WonderTradeConfirm {
     if (!CobbleWonderTrade.manager.hasCooldownEnded(player)) {
       player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessagewondertradecooldown()
         .replace("%time%",
-          PlayerUtils.getCooldown(DatabaseClientFactory.databaseClient.getUserInfo(player).get().getDate()))
+          PlayerUtils.getCooldown(new Date(DatabaseClientFactory.databaseClient.getUserInfo(player).get().getDate())))
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
@@ -158,7 +158,7 @@ public class WonderTradeConfirm {
     Calendar calendar = Calendar.getInstance();
     calendar.add(Calendar.MINUTE, CobbleWonderTrade.config.getCooldown());
     Date futureDate = calendar.getTime();
-    userInfo.setDate(futureDate);
+    userInfo.setDate(futureDate.getTime());
 
     DatabaseClientFactory.databaseClient.putUserInfo(userInfo);
     return true;

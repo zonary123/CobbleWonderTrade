@@ -51,7 +51,7 @@ public class JSONClient implements DatabaseClient {
 
   @Override
   public CompletableFuture<List<JsonObject>> getPokemonList(boolean special) {
-    return CompletableFuture.supplyAsync(() -> CobbleWonderTrade.manager.getPokemonList()); // Operación sincrónica
+    return CompletableFuture.supplyAsync(() -> CobbleWonderTrade.manager.getPokemonList());
   }
 
   @Override
@@ -79,13 +79,12 @@ public class JSONClient implements DatabaseClient {
       } else {
 
         List<JsonObject> list = new ArrayList<>(jsonObjects);
-        list.add(pokemonPlayer.saveToJSON(new JsonObject()));
 
 
         if (!list.isEmpty()) {
           JsonObject selectedPokemonJson = list.get(Utils.RANDOM.nextInt(list.size()));
-
           list.remove(selectedPokemonJson);
+          list.add(pokemonPlayer.saveToJSON(new JsonObject()));
 
           CobbleWonderTrade.manager.setPokemonList(list);
           CobbleWonderTrade.manager.writeInfo();
@@ -119,7 +118,7 @@ public class JSONClient implements DatabaseClient {
       Calendar calendar = Calendar.getInstance();
       calendar.add(Calendar.MINUTE, CobbleWonderTrade.config.getCooldown());
       Date futureDate = calendar.getTime();
-      userInfo.setDate(futureDate);
+      userInfo.setDate(futureDate.getTime());
       CobbleWonderTrade.manager.writeInfo();
       return userInfo;
     });

@@ -3,15 +3,16 @@ plugins {
     id("architectury-plugin")
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
-
+val common: Configuration by configurations.creating
+val shadowCommon: Configuration by configurations.creating
 architectury {
     platformSetupLoomIde()
     fabric()
 }
 
 configurations {
-    create("common")
-    create("shadowCommon")
+    //create("common")
+    //create("shadowCommon")
     compileClasspath.get().extendsFrom(configurations["common"])
     runtimeClasspath.get().extendsFrom(configurations["common"])
     getByName("developmentFabric").extendsFrom(configurations["common"])
@@ -32,10 +33,11 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
     modApi("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
 
+    shadowCommon("org.mongodb:mongodb-driver-reactivestreams:5.1.2")
+    shadowCommon("org.reactivestreams:reactive-streams:1.0.3")
     listOf(
         "org.mongodb:mongodb-driver-reactivestreams:5.1.2",
-        "org.slf4j:slf4j-api:2.0.0",
-        "org.slf4j:slf4j-simple:2.0.0"
+        "org.reactivestreams:reactive-streams:1.0.3",
     ).forEach {
         include(it)
     }

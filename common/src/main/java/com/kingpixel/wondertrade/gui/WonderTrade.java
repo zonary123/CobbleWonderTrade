@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -51,7 +52,7 @@ public class WonderTrade {
       GooeyButton poke3 = createButtonPokemon(partyStore.get(2));
 
       List<String> loreinfo = new ArrayList<>(CobbleWonderTrade.language.getInfo().getLore());
-      loreinfo.replaceAll(s -> s.replace("%time%", PlayerUtils.getCooldown(userInfo.getDate()))
+      loreinfo.replaceAll(s -> s.replace("%time%", PlayerUtils.getCooldown(new Date(userInfo.getDate())))
         .replace("%shinys%", pokemons.stream().filter(Pokemon::getShiny).count() + "")
         .replace("%legends%", pokemons.stream().filter(Pokemon::isLegendary).count() + "")
         .replace("%ultrabeast%", pokemons.stream().filter(Pokemon::isUltraBeast).count() + "")

@@ -125,7 +125,7 @@ public class WonderTradeManager {
     }
 
     Date now = new Date();
-    return now.after(userDate.getDate());
+    return now.after(new Date(userDate.getDate()));
   }
 
 
