@@ -87,7 +87,9 @@ public class WonderTradeConfirm {
     return page;
   }
 
-  public static boolean trade(ServerPlayer player, Pokemon pokemonplayer) throws NoPokemonStoreException, ExecutionException, InterruptedException {
+  public static boolean trade(ServerPlayer player, Pokemon pokemonplayer) throws NoPokemonStoreException,
+    ExecutionException, InterruptedException {
+
     if (!CobbleWonderTrade.manager.hasCooldownEnded(player)) {
       player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessagewondertradecooldown()
         .replace("%time%",
@@ -137,14 +139,17 @@ public class WonderTradeConfirm {
     }
 
     if (!CobbleWonderTrade.config.isIsrandom()) {
-      WonderTradeUtil.broadcast(PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
-        .replace("%player%", player.getGameProfile().getName())
-        .replace("%prefix%", CobbleWonderTrade.language.getPrefix()), pokemonplayer));
+      if (!CobbleWonderTrade.language.isDisablemessagePokemonToWondertrade()) {
+        WonderTradeUtil.broadcast(PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
+          .replace("%player%", player.getGameProfile().getName())
+          .replace("%prefix%", CobbleWonderTrade.language.getPrefix()), pokemonplayer));
+      }
       if (pokemongive.isLegendary() || pokemongive.getShiny()) {
         WonderTradeUtil.broadcast(
           PokemonUtils.replace(CobbleWonderTrade.language.getMessageisLegendaryOrShinyMessage()
-            .replace("%player%", player.getGameProfile().getName())
-            .replace("%prefix%", CobbleWonderTrade.language.getPrefix()), pokemongive)
+              .replace("%player%", player.getGameProfile().getName())
+              .replace("%prefix%", CobbleWonderTrade.language.getPrefix()),
+            pokemongive)
         );
       }
     }

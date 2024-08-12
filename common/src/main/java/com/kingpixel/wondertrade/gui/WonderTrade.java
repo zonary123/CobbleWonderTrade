@@ -56,7 +56,10 @@ public class WonderTrade {
         .replace("%shinys%", pokemons.stream().filter(Pokemon::getShiny).count() + "")
         .replace("%legends%", pokemons.stream().filter(Pokemon::isLegendary).count() + "")
         .replace("%ultrabeast%", pokemons.stream().filter(Pokemon::isUltraBeast).count() + "")
-        .replace("%ivs%", pokemons.stream().filter(pokemon -> PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31).count() + ""));
+        .replace("%paradox%", pokemons.stream()
+          .filter(pokemon -> pokemon.getForm().getSpecies().getLabels().contains("paradox")).count() + "")
+        .replace("%ivs%",
+          pokemons.stream().filter(pokemon -> PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31).count() + ""));
 
       GooeyButton info = GooeyButton.builder()
         .display(CobbleWonderTrade.language.getInfo().getItemStack())

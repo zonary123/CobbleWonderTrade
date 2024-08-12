@@ -67,7 +67,11 @@ public class UserInfo {
     }
 
     if (document.containsKey("date")) {
-      userInfo.setDate(document.getLong("date"));
+      try {
+        userInfo.setDate(document.getLong("date"));
+      } catch (ClassCastException ignored) {
+        userInfo.setDate(document.getDate("date").getTime());
+      }
     } else {
       throw new IllegalArgumentException("Document does not contain date field");
     }

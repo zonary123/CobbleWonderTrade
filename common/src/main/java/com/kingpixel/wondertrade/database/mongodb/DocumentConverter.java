@@ -6,7 +6,6 @@ import org.bson.Document;
 
 public class DocumentConverter {
   public static JsonObject documentToJsonObject(Document document) {
-    JsonParser parser = new JsonParser();
-    return parser.parse(document.toJson()).getAsJsonObject();
+    return JsonParser.parseString(document.toJson()).getAsJsonObject();
   }
 }

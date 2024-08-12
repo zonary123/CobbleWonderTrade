@@ -22,7 +22,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -113,7 +112,7 @@ public class MongoDBClient implements DatabaseClient {
   }
 
   public void createCollection(String collectionName) {
-    database.createCollection(collectionName).subscribe(new Subscriber<Void>() {
+    database.createCollection(collectionName).subscribe(new Subscriber<>() {
       @Override
       public void onSubscribe(Subscription s) {
         s.request(1);
@@ -147,7 +146,7 @@ public class MongoDBClient implements DatabaseClient {
           if (!special) {
             pokemons.add(pokemon);
           } else {
-            if (pokemon.getShiny() || pokemon.isLegendary() || pokemon.isUltraBeast() || PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31) {
+            if (pokemon.getShiny() || pokemon.isLegendary() || pokemon.isUltraBeast() || pokemon.getForm().getLabels().contains("paradox") || PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31) {
               pokemons.add(pokemon);
             }
           }
@@ -255,7 +254,9 @@ public class MongoDBClient implements DatabaseClient {
       // Actualiza el documento si existe
       return updateUserInfo(userInfo);
     } else {
-      userInfo.setDate(new Date(1).getTime());
+      // Asegúrate de que el valor de cooldown sea el correcto
+      userInfo.setDate(System.currentTimeMillis());  // Esto establece la fecha actual en milisegundos desde la época
+
       return toCompletableFuture(users.find(new Document("playeruuid", userInfo.getPlayeruuid().toString())).first())
         .thenCompose(existingDoc -> {
           if (existingDoc != null) {
@@ -282,6 +283,7 @@ public class MongoDBClient implements DatabaseClient {
     }
   }
 
+
   public CompletableFuture<UserInfo> updateUserInfo(UserInfo userInfo) {
     return CompletableFuture.supplyAsync(() -> {
       try {
@@ -289,7 +291,7 @@ public class MongoDBClient implements DatabaseClient {
 
         Bson updateOperation = Updates.combine(
           Updates.set("messagesend", userInfo.isMessagesend()),
-          Updates.set("date", UserInfo.getDateWithCooldown())
+          Updates.set("date", UserInfo.getDateWithCooldown())  // Aquí usas long para el cooldown
         );
 
         UpdateOptions options = new UpdateOptions().upsert(true);
@@ -324,7 +326,7 @@ public class MongoDBClient implements DatabaseClient {
 
     toCompletableFuture(pool.countDocuments())
       .thenCompose(count -> {
-        int targetSize = CobbleWonderTrade.config.getSizePool();
+        long targetSize = CobbleWonderTrade.config.getSizePool();
 
         if (count == targetSize) {
           return CompletableFuture.completedFuture(null);

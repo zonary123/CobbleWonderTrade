@@ -28,6 +28,7 @@ public class Lang {
   private String messagePokemonTradeBlackList;
   private String messageNoPokemonSlot;
   private String messageNoPoolView;
+  private boolean disablemessagePokemonToWondertrade;
   private String messagePokemonToWondertrade;
   private String messageisLegendaryOrShinyMessage;
   private String messageThePokemonNotHaveMinLevel;
@@ -71,11 +72,15 @@ public class Lang {
       "",
       "<#ecca18>Shinys: &f%shinys%",
       "<#ab8fdb>Legendaries: &f%legends%",
+      "<#d65549>UltraBeast: &f%ultrabeast%",
+      "<#d65549>Paradox: &f%paradox%",
+      "<#d65549>IVs 31: &f%ivs%",
       "<#3492eb>Cooldown: %time%",
       "",
       "<#ebab34>⏺ &7Left click to open the WonderTrade pool view.",
       "<#ebab34>⏺ &7Right click to open the WonderTrade pool especial view."
     ));
+    disablemessagePokemonToWondertrade = false;
     messagewondertradecooldown = "%prefix% <#d65549>You must wait before trading again %time%!";
     Pc = new ItemModel("cobblemon:pc", "<#49a0d6>PC", List.of("<#ebab34>⏺ &7Click to open the PC"));
     lorepokemon = List.of("<#ebab34>⏺ &7Click to select this pokemon");
@@ -109,6 +114,7 @@ public class Lang {
         titlepool = lang.getTitlepool();
         messagePokemonToWondertrade = lang.getMessagePokemonToWondertrade();
         lorepokemon = lang.getLorepokemon();
+        disablemessagePokemonToWondertrade = lang.isDisablemessagePokemonToWondertrade();
         donthavelevel = lang.getDonthavelevel();
         notallowshiny = lang.getNotallowshiny();
         notallowlegendary = lang.getNotallowlegendary();

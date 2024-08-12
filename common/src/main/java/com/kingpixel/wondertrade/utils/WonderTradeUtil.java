@@ -82,6 +82,7 @@ public class WonderTradeUtil {
   }
 
   public static void broadcast(String message) {
+    if (message.isEmpty()) return;
     CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> {
       player.sendSystemMessage(toNative(message));
     });

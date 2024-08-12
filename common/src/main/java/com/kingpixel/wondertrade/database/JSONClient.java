@@ -12,7 +12,6 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 /**
  * @author Carlos Varas Alonso - 24/07/2024 21:26
@@ -26,7 +25,9 @@ public class JSONClient implements DatabaseClient {
   @Override
   public void connect() {
     CobbleWonderTrade.LOGGER.info("Connecting to JSON");
-    resetPool();
+    if (!CobbleWonderTrade.config.isSavepool()) {
+      resetPool();
+    }
   }
 
   @Override
@@ -40,7 +41,7 @@ public class JSONClient implements DatabaseClient {
         if (!special) {
           pokemons.add(pokemon);
         } else {
-          if (pokemon.getShiny() || pokemon.isLegendary() || pokemon.isUltraBeast() || PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31) {
+          if (pokemon.getShiny() || pokemon.isLegendary() || pokemon.isUltraBeast() || pokemon.getForm().getLabels().contains("paradox") || PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31) {
             pokemons.add(pokemon);
           }
         }
@@ -67,36 +68,50 @@ public class JSONClient implements DatabaseClient {
   public CompletableFuture<Pokemon> putPokemon(Pokemon pokemonPlayer) {
     return CompletableFuture.supplyAsync(() -> {
       List<JsonObject> jsonObjects = CobbleWonderTrade.manager.getPokemonList();
-      if (CobbleWonderTrade.config.isIsrandom()) {
 
+      if (CobbleWonderTrade.config.isIsrandom()) {
         CobbleWonderTrade.manager.writeInfo();
         try {
           return WonderTradeUtil.getRandomPokemon();
         } catch (ExecutionException | InterruptedException e) {
           throw new RuntimeException(e);
         }
-
       } else {
-
         List<JsonObject> list = new ArrayList<>(jsonObjects);
 
-
         if (!list.isEmpty()) {
+          // Seleccionar un Pokémon aleatorio de la lista
           JsonObject selectedPokemonJson = list.get(Utils.RANDOM.nextInt(list.size()));
+
+          // Registro del Pokémon seleccionado
+          if (CobbleWonderTrade.config.isDebug())
+            CobbleWonderTrade.LOGGER.info("Pokémon seleccionado de la lista: " + selectedPokemonJson);
+
+
+          // Eliminar el Pokémon seleccionado de la lista
           list.remove(selectedPokemonJson);
+
+          // Agregar el Pokémon del jugador a la lista
           list.add(pokemonPlayer.saveToJSON(new JsonObject()));
 
+          // Actualizar la lista de Pokémon
           CobbleWonderTrade.manager.setPokemonList(list);
           CobbleWonderTrade.manager.writeInfo();
+
+          // Registro del Pokémon del jugador añadido a la lista
+          if (CobbleWonderTrade.config.isDebug())
+            CobbleWonderTrade.LOGGER.info("Pokémon del jugador añadido a la lista: " + pokemonPlayer.saveToJSON(new JsonObject()));
+
+          // Cargar y devolver el Pokémon seleccionado
           return Pokemon.Companion.loadFromJSON(selectedPokemonJson);
         } else {
           CobbleWonderTrade.manager.writeInfo();
           return getRandomPokemon();
         }
-
       }
     });
   }
+
 
   @Override
   public CompletableFuture<UserInfo> getUserInfo(ServerPlayer player) {
@@ -134,26 +149,18 @@ public class JSONClient implements DatabaseClient {
   @Override
   public void resetPool() {
     List<JsonObject> pokemonList = CobbleWonderTrade.manager.getPokemonList();
+    pokemonList.clear();
 
-    if (pokemonList.size() == CobbleWonderTrade.config.getSizePool()) return;
-    if (pokemonList.size() > CobbleWonderTrade.config.getSizePool()) {
-
-      List<JsonObject> sublist = pokemonList.stream()
-        .limit(CobbleWonderTrade.config.getSizePool())
-        .collect(Collectors.toList());
-      CobbleWonderTrade.manager.setPokemonList(sublist);
-    } else {
-
-      List<JsonObject> updatedList = new ArrayList<>(pokemonList);
-      while (updatedList.size() < CobbleWonderTrade.config.getSizePool()) {
-        try {
-          updatedList.add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
-        } catch (ExecutionException | InterruptedException e) {
-          throw new RuntimeException(e);
-        }
+    List<JsonObject> updatedList = new ArrayList<>();
+    while (updatedList.size() < CobbleWonderTrade.config.getSizePool()) {
+      try {
+        updatedList.add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
+      } catch (ExecutionException | InterruptedException e) {
+        throw new RuntimeException(e);
       }
-      CobbleWonderTrade.manager.setPokemonList(updatedList);
     }
+    CobbleWonderTrade.manager.setPokemonList(updatedList);
+
     CobbleWonderTrade.manager.writeInfo();
   }
 
