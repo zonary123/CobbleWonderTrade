@@ -33,8 +33,8 @@ dependencies {
 
     // Database
     implementation("org.mongodb:mongodb-driver-reactivestreams:5.1.2")
-    implementation("org.reactivestreams:reactive-streams:1.0.4")
-    implementation("io.projectreactor:reactor-core:3.6.8")
+    //implementation("org.reactivestreams:reactive-streams:1.0.4")
+    //implementation("io.projectreactor:reactor-core:3.6.8")
 
     // Kyori
     api("net.kyori:examination-api:1.3.0")

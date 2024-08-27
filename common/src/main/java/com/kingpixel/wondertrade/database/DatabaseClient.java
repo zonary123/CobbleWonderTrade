@@ -31,7 +31,7 @@ public interface DatabaseClient {
 
   CompletableFuture<UserInfo> putUserInfo(UserInfo userInfo, boolean update);
 
-  void resetPool();
+  void resetPool(boolean force);
 
   void disconnect();
 

@@ -45,17 +45,17 @@ dependencies {
     implementation("thedarkcolour:kotlinforforge:4.4.0")
 
     implementation("org.mongodb:mongodb-driver-reactivestreams:5.1.2")
-    implementation("org.reactivestreams:reactive-streams:1.0.4")
-    implementation("io.projectreactor:reactor-core:3.6.8")
+    //implementation("org.reactivestreams:reactive-streams:1.0.4")
+    // implementation("io.projectreactor:reactor-core:3.6.8")
 
     shadowCommon("org.mongodb:mongodb-driver-reactivestreams:5.1.2")
-    shadowCommon("org.reactivestreams:reactive-streams:1.0.4")
-    shadowCommon("io.projectreactor:reactor-core:3.6.8")
+    //shadowCommon("org.reactivestreams:reactive-streams:1.0.4")
+    //shadowCommon("io.projectreactor:reactor-core:3.6.8")
 
     listOf(
         "org.mongodb:mongodb-driver-reactivestreams:5.1.2",
-        "org.reactivestreams:reactive-streams:1.0.4",
-        "io.projectreactor:reactor-core:3.6.8"
+        //"org.reactivestreams:reactive-streams:1.0.4",
+        //"io.projectreactor:reactor-core:3.6.8"
     ).forEach {
         include(it)
     }
@@ -100,7 +100,6 @@ tasks {
         exclude("org/intellij/**/*")
         exclude("org/jetbrains/**/*")
 
-        relocate("reactor.core", "com.kingpixel.wondertrade.reactor")
         relocate("org.reactivestreams", "com.kingpixel.wondertrade.reactivestreams")
         relocate("com.mongodb", "com.kingpixel.wondertrade.mongodb")
         relocate("org.bson", "com.kingpixel.wondertrade.bson")

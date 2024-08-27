@@ -25,9 +25,7 @@ public class JSONClient implements DatabaseClient {
   @Override
   public void connect() {
     CobbleWonderTrade.LOGGER.info("Connecting to JSON");
-    if (!CobbleWonderTrade.config.isSavepool()) {
-      resetPool();
-    }
+    resetPool(false);
   }
 
   @Override
@@ -74,7 +72,7 @@ public class JSONClient implements DatabaseClient {
         try {
           return WonderTradeUtil.getRandomPokemon();
         } catch (ExecutionException | InterruptedException e) {
-          throw new RuntimeException(e);
+          throw new RuntimeException("Error al obtener un Pokémon aleatorio.", e);
         }
       } else {
         List<JsonObject> list = new ArrayList<>(jsonObjects);
@@ -84,9 +82,9 @@ public class JSONClient implements DatabaseClient {
           JsonObject selectedPokemonJson = list.get(Utils.RANDOM.nextInt(list.size()));
 
           // Registro del Pokémon seleccionado
-          if (CobbleWonderTrade.config.isDebug())
+          if (CobbleWonderTrade.config.isDebug()) {
             CobbleWonderTrade.LOGGER.info("Pokémon seleccionado de la lista: " + selectedPokemonJson);
-
+          }
 
           // Eliminar el Pokémon seleccionado de la lista
           list.remove(selectedPokemonJson);
@@ -99,14 +97,46 @@ public class JSONClient implements DatabaseClient {
           CobbleWonderTrade.manager.writeInfo();
 
           // Registro del Pokémon del jugador añadido a la lista
-          if (CobbleWonderTrade.config.isDebug())
+          if (CobbleWonderTrade.config.isDebug()) {
             CobbleWonderTrade.LOGGER.info("Pokémon del jugador añadido a la lista: " + pokemonPlayer.saveToJSON(new JsonObject()));
+          }
 
           // Cargar y devolver el Pokémon seleccionado
           return Pokemon.Companion.loadFromJSON(selectedPokemonJson);
         } else {
-          CobbleWonderTrade.manager.writeInfo();
-          return getRandomPokemon();
+          // La lista está vacía, reiniciar el pool
+          resetPool(true);
+
+          // Volver a obtener la lista actualizada
+          List<JsonObject> updatedList = CobbleWonderTrade.manager.getPokemonList();
+
+          if (!updatedList.isEmpty()) {
+            // Seleccionar un Pokémon aleatorio de la lista actualizada
+            JsonObject selectedPokemonJsonAfterReset = updatedList.get(Utils.RANDOM.nextInt(updatedList.size()));
+
+            // Registro del Pokémon seleccionado después del reinicio
+            if (CobbleWonderTrade.config.isDebug()) {
+              CobbleWonderTrade.LOGGER.info("Pokémon seleccionado después del reinicio: " + selectedPokemonJsonAfterReset);
+            }
+
+            // Agregar el Pokémon del jugador a la lista
+            updatedList.add(pokemonPlayer.saveToJSON(new JsonObject()));
+
+            // Actualizar la lista de Pokémon
+            CobbleWonderTrade.manager.setPokemonList(updatedList);
+            CobbleWonderTrade.manager.writeInfo();
+
+            // Registro del Pokémon del jugador añadido a la lista
+            if (CobbleWonderTrade.config.isDebug()) {
+              CobbleWonderTrade.LOGGER.info("Pokémon del jugador añadido a la lista después del reinicio: " + pokemonPlayer.saveToJSON(new JsonObject()));
+            }
+
+            // Cargar y devolver el Pokémon seleccionado después del reinicio
+            return Pokemon.Companion.loadFromJSON(selectedPokemonJsonAfterReset);
+          } else {
+            // Si después del reinicio la lista sigue vacía, manejar el caso de error
+            throw new RuntimeException("La lista de Pokémon sigue vacía después del reinicio.");
+          }
         }
       }
     });
@@ -147,30 +177,72 @@ public class JSONClient implements DatabaseClient {
   }
 
   @Override
-  public void resetPool() {
+  public void resetPool(boolean force) {
+    if (CobbleWonderTrade.manager.getPokemonList() == null) return;
     List<JsonObject> pokemonList = CobbleWonderTrade.manager.getPokemonList();
-    pokemonList.clear();
 
-    List<JsonObject> updatedList = new ArrayList<>();
-    while (updatedList.size() < CobbleWonderTrade.config.getSizePool()) {
+
+    if (CobbleWonderTrade.config.isSavepool()) {
+      if (!pokemonList.isEmpty() && pokemonList.size() == CobbleWonderTrade.config.getSizePool()) {
+        return;
+      } else {
+        CobbleWonderTrade.manager.setPokemonList(new ArrayList<>());
+      }
+    }
+
+    // Variable para determinar si se debe forzar el reinicio
+    boolean shouldForceReset = force;
+
+    // Si la lista está vacía o cumple alguna condición específica, establecer shouldForceReset en true
+    if (CobbleWonderTrade.config.isDebug()) {
+      CobbleWonderTrade.LOGGER.info(pokemonList.size() + " - " + CobbleWonderTrade.config.getSizePool());
+    }
+    
+    if (pokemonList.isEmpty() || pokemonList.size() != CobbleWonderTrade.config.getSizePool()) {
+      shouldForceReset = true;
+    }
+
+    int requiredSize = CobbleWonderTrade.config.getSizePool();
+
+    if (CobbleWonderTrade.config.isDebug()) {
+      CobbleWonderTrade.LOGGER.info("Forzar reinicio: " + shouldForceReset);
+    }
+
+    if (!shouldForceReset) {
+      return;
+    }
+
+    List<JsonObject> updatedList = new ArrayList<>(pokemonList);
+
+    // Añadir Pokémon si la lista tiene menos elementos de los requeridos
+    while (updatedList.size() < requiredSize) {
       try {
         updatedList.add(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()));
       } catch (ExecutionException | InterruptedException e) {
         throw new RuntimeException(e);
       }
     }
+
+    // Quitar Pokémon si la lista tiene más elementos de los requeridos
+    while (updatedList.size() > requiredSize) {
+      updatedList.remove(updatedList.size() - 1);  // Quitar el último Pokémon de la lista
+    }
+
+    // Actualizar la lista de Pokémon en el manager
     CobbleWonderTrade.manager.setPokemonList(updatedList);
 
+    // Guardar la información
+    CobbleWonderTrade.manager.writeInfo();
+  }
+
+
+  @Override
+  public void disconnect() {
     CobbleWonderTrade.manager.writeInfo();
   }
 
   @Override
-  public void disconnect() {
-
-  }
-
-  @Override
   public void save() {
-
+    CobbleWonderTrade.manager.writeInfo();
   }
 }

@@ -186,7 +186,7 @@ public class CommandTree {
             Commands.literal("reset")
               .requires(source -> source.hasPermission(2))
               .executes(context -> {
-                DatabaseClientFactory.databaseClient.resetPool();
+                DatabaseClientFactory.databaseClient.resetPool(true);
                 return 1;
               })
           )

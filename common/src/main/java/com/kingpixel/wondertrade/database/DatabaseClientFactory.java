@@ -7,8 +7,8 @@ public class DatabaseClientFactory {
   public static DataBaseType type;
   public static DatabaseClient databaseClient;
 
-  public static DatabaseClient createDatabaseClient(DataBaseType type, String uri, String database, String user,
-                                                    String password) {
+  public static void createDatabaseClient(DataBaseType type, String uri, String database, String user,
+                                          String password) {
     if (databaseClient != null) {
       databaseClient.disconnect();
     }
@@ -17,7 +17,5 @@ public class DatabaseClientFactory {
       case JSON -> databaseClient = new JSONClient(uri, user, password);
       default -> databaseClient = new JSONClient(uri, user, password);
     }
-    databaseClient.connect();
-    return databaseClient;
   }
 }

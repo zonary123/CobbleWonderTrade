@@ -38,55 +38,83 @@ public class WonderTradeManager {
   }
 
   public void init() {
-    DatabaseClientFactory.createDatabaseClient(CobbleWonderTrade.config.getDatabaseType(),
+    // Inicialización del cliente de la base de datos
+    DatabaseClientFactory.createDatabaseClient(
+      CobbleWonderTrade.config.getDatabaseType(),
       CobbleWonderTrade.config.getDatabaseConfig().getUrl(),
       CobbleWonderTrade.config.getDatabaseConfig().getDatabase(),
       CobbleWonderTrade.config.getDatabaseConfig().getUser(),
-      CobbleWonderTrade.config.getDatabaseConfig().getPassword());
+      CobbleWonderTrade.config.getDatabaseConfig().getPassword()
+    );
 
-    if (DatabaseClientFactory.type == DataBaseType.JSON) {
-      CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json",
-        el -> {
-          Gson gson = Utils.newWithoutSpacingGson();
-          WonderTradeManager manager = gson.fromJson(el, WonderTradeManager.class);
-          this.pokemonList = manager.getPokemonList();
-        });
+    // Lectura asincrónica del archivo pool.json
+    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(
+      CobbleWonderTrade.PATH_DATA,
+      "pool.json",
+      el -> {
+        Gson gson = Utils.newWithoutSpacingGson();
+        WonderTradeManager manager = gson.fromJson(el, WonderTradeManager.class);
+        this.pokemonList = manager.getPokemonList();
+      }
+    );
 
-      futureRead.thenRun(() -> {
-        if (pokemonList.isEmpty()) {
+    // Manejo del futuro de lectura
+    futureRead.thenCompose(result -> {
+      // Verifica si la lista está vacía o nula después de la lectura
+      if (pokemonList == null || pokemonList.isEmpty()) { // Verifica si la lista está vacía o nula
+        return CompletableFuture.supplyAsync(() -> {
           try {
             generatePokemonList();
+            Gson gson = Utils.newWithoutSpacingGson();
+            String data = gson.toJson(this);
+            CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(
+              CobbleWonderTrade.PATH_DATA,
+              "pool.json",
+              data
+            );
+
+            if (!futureWrite.join()) {
+              CobbleWonderTrade.LOGGER.fatal("Could not write pool.json file for CobbleWonderTrade.");
+            }
           } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
           }
-          Gson gson = Utils.newWithoutSpacingGson();
-          String data = gson.toJson(this);
-          CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", data);
-          if (!futureWrite.join()) {
-            CobbleWonderTrade.LOGGER.fatal("Could not write pool.json file for CobbleWonderTrade.");
-          }
-        }
-
-        for (ServerPlayer player : CobbleWonderTrade.server.getPlayerList().getPlayers()) {
-          addPlayer(player);
-        }
-      }).exceptionally(ex -> {
-        CobbleWonderTrade.LOGGER.info("No pool.json file found for " + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
-        try {
-          generatePokemonList();
-        } catch (ExecutionException | InterruptedException e) {
-          throw new RuntimeException(e);
-        }
+          return true;
+        });
+      }
+      return CompletableFuture.completedFuture(true);
+    }).thenRun(() -> {
+      // Agregar jugadores actuales al sistema de WonderTrade
+      for (ServerPlayer player : CobbleWonderTrade.server.getPlayerList().getPlayers()) {
+        addPlayer(player);
+      }
+    }).thenRun(() -> {
+      // Esperar a que se haya completado la lectura y cualquier operación relacionada
+      writeInfo();
+    }).thenRun(() -> {
+      // Conectar el cliente de la base de datos
+      DatabaseClientFactory.databaseClient.connect();
+    }).exceptionally(ex -> {
+      // Manejo de excepciones durante la lectura del archivo
+      CobbleWonderTrade.LOGGER.info("No pool.json file found for " + CobbleWonderTrade.MOD_NAME + ". Attempting to generate one.");
+      try {
+        generatePokemonList();
         Gson gson = Utils.newWithoutSpacingGson();
         String data = gson.toJson(this);
-        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", data);
+        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(
+          CobbleWonderTrade.PATH_DATA,
+          "pool.json",
+          data
+        );
+
         if (!futureWrite.join()) {
           CobbleWonderTrade.LOGGER.fatal("Could not write pool.json file for CobbleWonderTrade.");
         }
-        return null;
-      });
-    }
-    DatabaseClientFactory.databaseClient.resetPool();
+      } catch (ExecutionException | InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      return null;
+    });
   }
 
 

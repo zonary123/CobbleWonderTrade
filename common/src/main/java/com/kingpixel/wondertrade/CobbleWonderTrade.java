@@ -50,10 +50,11 @@ public class CobbleWonderTrade {
 
   public static void load() {
     files();
+    manager.init();
     spawnRates.init();
     WonderTradeUtil.init();
-    manager.init();
     tasks();
+    DatabaseClientFactory.databaseClient.resetPool(false);
   }
 
   private static void events() {
@@ -77,8 +78,8 @@ public class CobbleWonderTrade {
   }
 
   private static void files() {
-    language.init();
     config.init();
+    language.init();
   }
 
   private static void tasks() {

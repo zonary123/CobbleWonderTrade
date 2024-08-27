@@ -50,6 +50,8 @@ public class MongoDBClient implements DatabaseClient {
     } catch (Exception e) {
       CobbleWonderTrade.LOGGER.error("Error while connecting to MongoDB: " + e.getMessage());
     }
+
+    resetPool(false);
   }
 
   private <T> CompletableFuture<T> toCompletableFuture(Publisher<T> publisher) {
@@ -316,20 +318,30 @@ public class MongoDBClient implements DatabaseClient {
 
 
   @Override
-  public void resetPool() {
+  public void resetPool(boolean force) {
     try {
-      if (getSpecialPool(false).get().size() == CobbleWonderTrade.config.getSizePool()) return;
+      List<Pokemon> a = getSpecialPool(false).get();
+      if (a.isEmpty()) {
+        force = true;
+      } else {
+        if (!force) {
+          if (a.size() == CobbleWonderTrade.config.getSizePool()) return;
+        }
+      }
 
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
 
+    boolean finalForce = force;
     toCompletableFuture(pool.countDocuments())
       .thenCompose(count -> {
         long targetSize = CobbleWonderTrade.config.getSizePool();
 
-        if (count == targetSize) {
-          return CompletableFuture.completedFuture(null);
+        if (!finalForce) {
+          if (count == targetSize) {
+            return CompletableFuture.completedFuture(null);
+          }
         }
 
         return toCompletableFutureList(pool.find())
