@@ -179,40 +179,27 @@ public class JSONClient implements DatabaseClient {
   @Override
   public void resetPool(boolean force) {
     if (CobbleWonderTrade.manager.getPokemonList() == null) return;
+
     List<JsonObject> pokemonList = CobbleWonderTrade.manager.getPokemonList();
-
-
-    if (CobbleWonderTrade.config.isSavepool()) {
-      if (!pokemonList.isEmpty() && pokemonList.size() == CobbleWonderTrade.config.getSizePool()) {
-        return;
-      } else {
-        CobbleWonderTrade.manager.setPokemonList(new ArrayList<>());
-      }
-    }
-
-    // Variable para determinar si se debe forzar el reinicio
-    boolean shouldForceReset = force;
-
-    // Si la lista está vacía o cumple alguna condición específica, establecer shouldForceReset en true
-    if (CobbleWonderTrade.config.isDebug()) {
-      CobbleWonderTrade.LOGGER.info(pokemonList.size() + " - " + CobbleWonderTrade.config.getSizePool());
-    }
-    
-    if (pokemonList.isEmpty() || pokemonList.size() != CobbleWonderTrade.config.getSizePool()) {
-      shouldForceReset = true;
-    }
-
     int requiredSize = CobbleWonderTrade.config.getSizePool();
 
+    // Si estamos en modo debug, mostrar el tamaño actual y el tamaño requerido
     if (CobbleWonderTrade.config.isDebug()) {
-      CobbleWonderTrade.LOGGER.info("Forzar reinicio: " + shouldForceReset);
+      CobbleWonderTrade.LOGGER.info("Current Pool Size: " + pokemonList.size() + ", Required Pool Size: " + requiredSize);
     }
 
-    if (!shouldForceReset) {
+    // Determinar si se debe reiniciar la "pool"
+    boolean shouldReset = force || pokemonList.size() != requiredSize;
+
+    // Si no se necesita reiniciar, salir del método
+    if (!shouldReset) {
       return;
     }
 
-    List<JsonObject> updatedList = new ArrayList<>(pokemonList);
+    // Reiniciar la "pool" a una lista vacía
+    CobbleWonderTrade.manager.setPokemonList(new ArrayList<>());
+
+    List<JsonObject> updatedList = new ArrayList<>();
 
     // Añadir Pokémon si la lista tiene menos elementos de los requeridos
     while (updatedList.size() < requiredSize) {
@@ -223,16 +210,15 @@ public class JSONClient implements DatabaseClient {
       }
     }
 
-    // Quitar Pokémon si la lista tiene más elementos de los requeridos
-    while (updatedList.size() > requiredSize) {
-      updatedList.remove(updatedList.size() - 1);  // Quitar el último Pokémon de la lista
-    }
-
     // Actualizar la lista de Pokémon en el manager
     CobbleWonderTrade.manager.setPokemonList(updatedList);
 
     // Guardar la información
     CobbleWonderTrade.manager.writeInfo();
+
+    if (CobbleWonderTrade.config.isDebug()) {
+      CobbleWonderTrade.LOGGER.info("Pool reset to size: " + requiredSize);
+    }
   }
 
 

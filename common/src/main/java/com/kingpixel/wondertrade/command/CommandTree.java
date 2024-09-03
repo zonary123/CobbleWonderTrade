@@ -94,7 +94,7 @@ public class CommandTree {
               player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
               return 0;
             }
-            DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), false);
+            DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), true);
             return 1;
           })
           .then(Commands.argument("player", EntityArgument.player())
@@ -105,7 +105,7 @@ public class CommandTree {
                 player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
                 return 0;
               }
-              DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), false);
+              DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), true);
               return 1;
             })
           )
