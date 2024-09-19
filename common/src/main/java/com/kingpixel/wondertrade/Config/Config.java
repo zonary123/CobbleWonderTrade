@@ -62,8 +62,8 @@ public class Config {
     israndom = false;
     allowshiny = true;
     allowlegendary = true;
-    pokeblacklist = List.of("Magikarp");
-    poketradeblacklist = List.of("Magikarp");
+    pokeblacklist = List.of("Magikarp", "egg", "pokestop");
+    poketradeblacklist = List.of("Magikarp", "egg", "pokestop");
     legends = List.of("Magikarp");
     aliases = List.of("wt", "wondertrade");
 
