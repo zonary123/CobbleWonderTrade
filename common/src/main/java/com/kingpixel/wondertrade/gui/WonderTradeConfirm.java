@@ -5,6 +5,7 @@ import ca.landonjw.gooeylibs2.api.button.GooeyButton;
 import ca.landonjw.gooeylibs2.api.page.GooeyPage;
 import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.api.pokemon.PokemonPropertyExtractor;
 import com.cobblemon.mod.common.api.storage.NoPokemonStoreException;
 import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
 import com.cobblemon.mod.common.item.PokemonItem;
@@ -23,6 +24,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
@@ -90,10 +92,9 @@ public class WonderTradeConfirm {
   public static boolean trade(ServerPlayer player, Pokemon pokemonplayer) throws NoPokemonStoreException,
     ExecutionException, InterruptedException {
 
-    if (!CobbleWonderTrade.manager.hasCooldownEnded(player)) {
+    if (PlayerUtils.isCooldown(DatabaseClientFactory.databaseClient.getUserInfo(player).getDate())) {
       player.sendSystemMessage(WonderTradeUtil.toNative(CobbleWonderTrade.language.getMessagewondertradecooldown()
-        .replace("%time%",
-          PlayerUtils.getCooldown(new Date(DatabaseClientFactory.databaseClient.getUserInfo(player).get().getDate())))
+        .replace("%time%", PlayerUtils.getCooldown(new Date(DatabaseClientFactory.databaseClient.getUserInfo(player).getDate())))
         .replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
       return false;
     }
@@ -117,7 +118,17 @@ public class WonderTradeConfirm {
       return false;
     }
 
-    Pokemon pokemongive = DatabaseClientFactory.databaseClient.putPokemon(pokemonplayer).get();
+    Pokemon pokemongive = DatabaseClientFactory.databaseClient.putPokemon(pokemonplayer).clone(true, true);
+
+    if (!CobbleWonderTrade.config.isSavepool()) {
+      pokemongive.createPokemonProperties(List.of(
+        PokemonPropertyExtractor.SHINY,
+        PokemonPropertyExtractor.LEVEL,
+        PokemonPropertyExtractor.NATURE,
+        PokemonPropertyExtractor.ABILITY,
+        PokemonPropertyExtractor.POKEBALL
+      )).apply(pokemongive);
+    }
 
     if (!CobbleWonderTrade.config.isIsrandom()) {
       if (pokemongive == null) return false;
@@ -158,10 +169,10 @@ public class WonderTradeConfirm {
       pokemongive))
     );
 
-    UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player).get();
+    UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
     userInfo.setMessagesend(false);
     Calendar calendar = Calendar.getInstance();
-    calendar.add(Calendar.MINUTE, CobbleWonderTrade.config.getCooldown());
+    calendar.add(Calendar.MINUTE, CobbleWonderTrade.config.getCooldown(player));
     Date futureDate = calendar.getTime();
     userInfo.setDate(futureDate.getTime());
 

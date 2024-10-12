@@ -1,13 +1,17 @@
 package com.kingpixel.wondertrade.Config;
 
 import com.google.gson.Gson;
+import com.kingpixel.cobbleutils.Model.FilterPokemons;
+import com.kingpixel.cobbleutils.util.LuckPermsUtil;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DataBaseType;
 import com.kingpixel.wondertrade.model.DataBaseData;
 import lombok.Getter;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 
@@ -20,6 +24,8 @@ public class Config {
   private String lang;
   private DataBaseType databaseType;
   private DataBaseData databaseConfig;
+  private boolean autoReset;
+  private int cooldownReset;
   private int cooldown;
   private int cooldownmessage;
   private int sizePool;
@@ -36,7 +42,8 @@ public class Config {
   private int shinys;
   private int legendaries;
   private boolean israndom;
-  private List<String> pokeblacklist;
+  private Map<String, Integer> cooldownPermission;
+  private FilterPokemons filterGenerationPokemon;
   private List<String> poketradeblacklist;
   private List<String> legends;
   private List<String> aliases;
@@ -44,6 +51,8 @@ public class Config {
   public Config() {
     debug = false;
     lang = "en";
+    autoReset = false;
+    cooldownReset = 30;
     databaseType = DataBaseType.JSON;
     databaseConfig = new DataBaseData();
     cooldown = 30;
@@ -62,7 +71,13 @@ public class Config {
     israndom = false;
     allowshiny = true;
     allowlegendary = true;
-    pokeblacklist = List.of("Magikarp", "egg", "pokestop");
+    cooldownPermission = Map.of(
+      "wondertrade.bypasscooldown", 0,
+      "wondertrade.vip", 15,
+      "wondertrade.vip+", 10,
+      "wondertrade.vip++", 5
+    );
+    filterGenerationPokemon = new FilterPokemons();
     poketradeblacklist = List.of("Magikarp", "egg", "pokestop");
     legends = List.of("Magikarp");
     aliases = List.of("wt", "wondertrade");
@@ -90,7 +105,7 @@ public class Config {
         shinys = config.getShinys();
         legendaries = config.getLegendaries();
         israndom = config.isIsrandom();
-        pokeblacklist = config.getPokeblacklist();
+        filterGenerationPokemon = config.getFilterGenerationPokemon();
         aliases = config.getAliases();
         allowshiny = config.isAllowshiny();
         allowlegendary = config.isAllowlegendary();
@@ -98,7 +113,9 @@ public class Config {
         poketradeblacklist = config.getPoketradeblacklist();
         poolview = config.isPoolview();
         savepool = config.isSavepool();
-
+        cooldownPermission = config.getCooldownPermission();
+        autoReset = config.isAutoReset();
+        cooldownReset = config.getCooldownReset();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH, "config.json",
           data);
@@ -118,6 +135,15 @@ public class Config {
         CobbleWonderTrade.LOGGER.fatal("Could not write config.json file for CobbleHunt.");
       }
     }
+  }
 
+  public Integer getCooldown(ServerPlayer player) {
+    Integer cooldown = this.cooldown;
+    for (Map.Entry<String, Integer> entry : cooldownPermission.entrySet()) {
+      if (LuckPermsUtil.checkPermission(player, entry.getKey())) {
+        if (entry.getValue() < cooldown) cooldown = entry.getValue();
+      }
+    }
+    return cooldown;
   }
 }

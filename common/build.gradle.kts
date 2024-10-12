@@ -25,16 +25,14 @@ dependencies {
     modImplementation("me.clip:placeholderapi:${property("placeholder_api_version_spigot")}")
 
     // Cobbleuitls
-    modImplementation(files("libs/CobbleUtils-common-1.0.7.jar"))
+    modImplementation(files("libs/CobbleUtils-common-1.1.1.jar"))
 
     // Lombok
     annotationProcessor("org.projectlombok:lombok:1.18.20")
     implementation("org.projectlombok:lombok:1.18.20")
 
     // Database
-    implementation("org.mongodb:mongodb-driver-reactivestreams:5.1.2")
-    //implementation("org.reactivestreams:reactive-streams:1.0.4")
-    //implementation("io.projectreactor:reactor-core:3.6.8")
+    api("org.mongodb:mongodb-driver-sync:${property("mongodb_version")}")
 
     // Kyori
     api("net.kyori:examination-api:1.3.0")

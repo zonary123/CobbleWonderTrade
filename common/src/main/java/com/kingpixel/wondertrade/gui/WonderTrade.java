@@ -41,9 +41,9 @@ public class WonderTrade {
         .build();
 
       UserInfo userInfo =
-        DatabaseClientFactory.databaseClient.getUserInfo((ServerPlayer) player).get();
+        DatabaseClientFactory.databaseClient.getUserInfo((ServerPlayer) player);
 
-      List<Pokemon> pokemons = DatabaseClientFactory.databaseClient.getSpecialPool(false).get();
+      List<Pokemon> pokemons = DatabaseClientFactory.databaseClient.getSpecialPool(false);
 
       PlayerPartyStore partyStore = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID());
 

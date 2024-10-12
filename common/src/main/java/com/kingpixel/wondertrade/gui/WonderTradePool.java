@@ -40,7 +40,7 @@ public class WonderTradePool {
       .build();
     List<Button> buttons = new ArrayList<>();
 
-    List<Pokemon> pokemons = new ArrayList<>(DatabaseClientFactory.databaseClient.getSpecialPool(special).get());
+    List<Pokemon> pokemons = new ArrayList<>(DatabaseClientFactory.databaseClient.getSpecialPool(special));
 
     for (Pokemon p : pokemons) {
       GooeyButton pokemonButton = createPokemonButton(p);

@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author Carlos Varas Alonso - 24/07/2024 21:02
@@ -15,21 +14,21 @@ import java.util.concurrent.CompletableFuture;
 public interface DatabaseClient {
   void connect();
 
-  CompletableFuture<List<Pokemon>> getSpecialPool(boolean special);
+  List<Pokemon> getSpecialPool(boolean special);
 
-  CompletableFuture<List<JsonObject>> getPokemonList(boolean special);
+  List<JsonObject> getPokemonList(boolean special);
 
   Pokemon getRandomPokemon();
 
-  CompletableFuture<Pokemon> putPokemon(Pokemon pokemon);
+  Pokemon putPokemon(Pokemon pokemon);
 
-  CompletableFuture<UserInfo> getUserInfo(ServerPlayer player);
+  UserInfo getUserInfo(ServerPlayer player);
 
-  CompletableFuture<UserInfo> getUserinfo(UUID uuid);
+  UserInfo getUserinfo(UUID uuid);
 
-  CompletableFuture<UserInfo> putUserInfo(UserInfo userInfo);
+  UserInfo putUserInfo(UserInfo userInfo);
 
-  CompletableFuture<UserInfo> putUserInfo(UserInfo userInfo, boolean update);
+  UserInfo putUserInfo(UserInfo userInfo, boolean update);
 
   void resetPool(boolean force);
 
