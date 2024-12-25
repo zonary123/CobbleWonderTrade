@@ -16,6 +16,7 @@ import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,7 +117,7 @@ public class CobbleWonderTrade {
     ScheduledFuture<?> broadcastTask = scheduler.scheduleAtFixedRate(() -> {
       if (server != null) {
         List<Pokemon> pokemons = new ArrayList<>();
-        DatabaseClientFactory.databaseClient.getPokemonList(false).forEach(pokemon -> pokemons.add(Pokemon.Companion.loadFromJSON(pokemon)));
+        DatabaseClientFactory.databaseClient.getPokemonList(false).forEach(pokemon -> pokemons.add(Pokemon.Companion.loadFromJSON(DynamicRegistryManager.EMPTY,pokemon)));
         WonderTradeUtil.messagePool(pokemons);
       }
     }, CobbleWonderTrade.config.getCooldownmessage(), CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);

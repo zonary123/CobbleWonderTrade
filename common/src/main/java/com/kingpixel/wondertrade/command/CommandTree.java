@@ -165,7 +165,7 @@ public class CommandTree {
                         slot--;
                         if (slot < 0 || slot > 5) return 0;
                         try {
-                          Pokemon pokemon = Cobblemon.INSTANCE.getStorage().getParty(player.getUuid()).get(slot);
+                          Pokemon pokemon = Cobblemon.INSTANCE.getStorage().getParty(player).get(slot);
                           if (pokemon != null)
                             WonderTradeConfirm.trade(player, pokemon);
                         } catch (Exception e) {

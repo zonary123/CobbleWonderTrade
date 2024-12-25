@@ -1,21 +1,72 @@
 plugins {
     id("java")
     id("java-library")
-    kotlin("jvm") version "1.9.0"
-    `maven-publish`
-    id("dev.architectury.loom") version "1.6-SNAPSHOT" apply false
-    id("architectury-plugin") version "3.4-SNAPSHOT" apply false
+
+    id("dev.architectury.loom") version "1.9-SNAPSHOT" apply false
+    id("architectury-plugin") version "3.4-SNAPSHOT"
+    id("com.github.johnrengelman.shadow") version "8.1.1" apply false
 }
 
-group = "${property("maven_group")}"
+group = property("maven_group") as String
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
 
 allprojects {
+
+
+    apply(plugin = "java")
+    apply(plugin = "java-library")
+    apply(plugin = "dev.architectury.loom")
+    apply(plugin = "architectury-plugin")
+    apply(plugin = "com.github.johnrengelman.shadow")
+
+    dependencies {
+        "minecraft"("com.mojang:minecraft:${property("minecraft_version")}")
+        "mappings"("net.fabricmc:yarn:${property("yarn_mappings")}:v2")
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    tasks.processResources {
+        expand(
+            mapOf(
+                "mod_name" to project.property("mod_name"),
+                "mod_id" to project.property("mod_id"),
+                "mod_version" to project.property("mod_version"),
+                "mod_description" to project.property("mod_description"),
+                "author" to project.property("author"),
+                "repository" to project.property("repository"),
+                "license" to project.property("license"),
+                "mod_icon" to project.property("mod_icon"),
+                "environment" to project.property("environment"),
+                "supported_minecraft_versions" to project.property("supported_minecraft_versions")
+            )
+        )
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.release = 21
+    }
+
+    tasks.processResources {
+        expand(
+            mapOf(
+                "mod_name" to project.property("mod_name"),
+                "mod_id" to project.property("mod_id"),
+                "mod_version" to project.property("mod_version"),
+                "mod_description" to project.property("mod_description"),
+                "author" to project.property("author"),
+                "repository" to project.property("repository"),
+                "license" to project.property("license"),
+                "mod_icon" to project.property("mod_icon"),
+                "environment" to project.property("environment"),
+                "supported_minecraft_versions" to project.property("supported_minecraft_versions")
+            )
+        )
+    }
+
     repositories {
         mavenCentral()
         maven("https://cursemaven.com")
@@ -39,9 +90,11 @@ allprojects {
         maven("https://oss.sonatype.org/content/repositories/snapshots") {
             name = "Sonatype Snapshots"
         }
-/*        maven("https://s01.oss.sonatype.org/content/repositories/snapshots") {
+        maven("https://s01.oss.sonatype.org/content/repositories/snapshots") {
             name = "Sonatype 01 Snapshots"
-        }*/
+        }
+        maven("https://maven.neoforged.net/releases") {
+            name = "NeoForged"
+        }
     }
 }
-

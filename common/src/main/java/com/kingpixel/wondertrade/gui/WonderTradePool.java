@@ -20,6 +20,8 @@ import com.kingpixel.cobbleutils.util.UIUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.LoreComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
@@ -37,7 +39,7 @@ public class WonderTradePool {
   public static Page open(boolean special) throws ExecutionException, InterruptedException {
     GooeyButton fill = GooeyButton.builder()
       .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
-      .title("")
+      .with(DataComponentTypes.CUSTOM_NAME,AdventureTranslator.toNative(""))
       .build();
     List<Button> buttons = new ArrayList<>();
 
@@ -48,17 +50,9 @@ public class WonderTradePool {
       buttons.add(pokemonButton);
     }
 
-    LinkedPageButton previus = LinkedPageButton.builder()
-      .display(CobbleUtils.language.getItemPrevious().getItemStack())
-      .title(AdventureTranslator.toNative(CobbleUtils.language.getItemPrevious().getDisplayname()))
-      .linkType(LinkType.Previous)
-      .build();
+    LinkedPageButton previus = UIUtils.getPreviousButton(action -> {});
 
-    LinkedPageButton next = LinkedPageButton.builder()
-      .display(CobbleUtils.language.getItemNext().getItemStack())
-      .title(AdventureTranslator.toNative(CobbleUtils.language.getItemNext().getDisplayname()))
-      .linkType(LinkType.Next)
-      .build();
+    LinkedPageButton next = UIUtils.getNextButton(action -> {});
 
     GooeyButton close = UIUtils.getCloseButton(action -> {
       try {
@@ -90,9 +84,10 @@ public class WonderTradePool {
     try {
       GooeyButton pokemonButton = GooeyButton.builder()
         .display(PokemonItem.from(p))
-        .title(AdventureTranslator.toNative(PokemonUtils.replace(CobbleUtils.language.getPokemonnameformat(), p)))
-        .lore(Text.class,
-          AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleUtils.language.getLorepokemon(), p)))
+        .with(DataComponentTypes.ITEM_NAME,
+          AdventureTranslator.toNative(PokemonUtils.replace(CobbleUtils.language.getPokemonnameformat(), p)))
+        .with(DataComponentTypes.LORE,
+          new LoreComponent(AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleUtils.language.getLorepokemon(), p))))
         .build();
       return pokemonButton;
     } catch (Exception e) {
@@ -100,7 +95,7 @@ public class WonderTradePool {
 
       return GooeyButton.builder()
         .display(new ItemStack(Items.BARRIER))
-        .title("Error")
+        .with(DataComponentTypes.CUSTOM_NAME,AdventureTranslator.toNative("Error"))
         .build();
     }
   }

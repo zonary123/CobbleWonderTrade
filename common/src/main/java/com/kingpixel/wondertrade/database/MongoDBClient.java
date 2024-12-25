@@ -14,6 +14,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -65,7 +66,7 @@ public class MongoDBClient implements DatabaseClient {
     List<Pokemon> pokemons = new ArrayList<>();
     for (Document document : documents) {
       JsonObject jsonObject = DocumentConverter.documentToJsonObject(document);
-      Pokemon pokemon = Pokemon.Companion.loadFromJSON(jsonObject);
+      Pokemon pokemon = Pokemon.Companion.loadFromJSON(DynamicRegistryManager.EMPTY,jsonObject);
       if (!special || WonderTradeUtil.isSpecial(pokemon)) {
         pokemons.add(pokemon);
       }
@@ -95,7 +96,7 @@ public class MongoDBClient implements DatabaseClient {
 
   @Override
   public Pokemon putPokemon(Pokemon pokemonPlayer) {
-    Document newPokemonDoc = Document.parse(pokemonPlayer.saveToJSON(new JsonObject()).toString());
+    Document newPokemonDoc = Document.parse(pokemonPlayer.saveToJSON(DynamicRegistryManager.EMPTY,new JsonObject()).toString());
 
     // Selecciona un Pokémon aleatorio y lo reemplaza
     List<Document> documents = pool.aggregate(
@@ -107,7 +108,7 @@ public class MongoDBClient implements DatabaseClient {
       pool.deleteOne(selectedDocument);
       pool.insertOne(newPokemonDoc);
       JsonObject selectedPokemonJson = DocumentConverter.documentToJsonObject(selectedDocument);
-      return Pokemon.Companion.loadFromJSON(selectedPokemonJson);
+      return Pokemon.Companion.loadFromJSON(DynamicRegistryManager.EMPTY,selectedPokemonJson);
     } else {
       pool.insertOne(newPokemonDoc);
       return pokemonPlayer;
@@ -189,7 +190,7 @@ public class MongoDBClient implements DatabaseClient {
 
       List<Document> pokemonDocuments = generatedPokemons.stream().map(pokemon -> {
         pokemon.setLevel(Utils.RANDOM.nextInt(CobbleWonderTrade.config.getMinlv(), CobbleWonderTrade.config.getMaxlv()));
-        return Document.parse(pokemon.saveToJSON(new JsonObject()).toString());
+        return Document.parse(pokemon.saveToJSON(DynamicRegistryManager.EMPTY,new JsonObject()).toString());
       }).collect(Collectors.toList());
 
       pool.insertMany(pokemonDocuments);

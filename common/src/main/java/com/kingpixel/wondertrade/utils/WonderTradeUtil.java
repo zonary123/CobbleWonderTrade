@@ -10,6 +10,7 @@ import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import java.util.*;
@@ -68,7 +69,7 @@ public class WonderTradeUtil {
     List<Pokemon> arraypokemons = new ArrayList<>();
 
     DatabaseClientFactory.databaseClient.getPokemonList(false).forEach(pokemon1 -> {
-      arraypokemons.add(Pokemon.Companion.loadFromJSON(pokemon1));
+      arraypokemons.add(Pokemon.Companion.loadFromJSON(DynamicRegistryManager.EMPTY,pokemon1));
     });
 
     arraypokemons.forEach(pokemon1 -> generatedPokemonNames.add(pokemon1.getSpecies().showdownId()));

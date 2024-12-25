@@ -11,6 +11,7 @@ import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import lombok.Getter;
 import lombok.Setter;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.io.File;
@@ -64,9 +65,9 @@ public class JSONClient implements DatabaseClient {
     List<JsonObject> pokemonList = new ArrayList<>();
     pool.forEach(pokemon -> {
       if (WonderTradeUtil.isSpecial(pokemon) && special) {
-        pokemonList.add(pokemon.saveToJSON(new JsonObject()));
+        pokemonList.add(pokemon.saveToJSON(DynamicRegistryManager.EMPTY,new JsonObject()));
       } else {
-        pokemonList.add(pokemon.saveToJSON(new JsonObject()));
+        pokemonList.add(pokemon.saveToJSON(DynamicRegistryManager.EMPTY,new JsonObject()));
       }
     });
     return pokemonList;
@@ -170,7 +171,7 @@ public class JSONClient implements DatabaseClient {
       String content = Utils.readFileSync(Utils.getAbsolutePath(CobbleWonderTrade.PATH_DATA + "pool.json"));
       List<JsonObject> list = gson.fromJson(content, new TypeToken<List<JsonObject>>() {
       }.getType());
-      list.forEach(json -> pool.add(Pokemon.Companion.loadFromJSON(json)));
+      list.forEach(json -> pool.add(Pokemon.Companion.loadFromJSON(DynamicRegistryManager.EMPTY,json)));
     } catch (Exception e) {
       CobbleWonderTrade.LOGGER.error("Error loading pool: ", e);
       resetPool(true);
@@ -239,7 +240,7 @@ public class JSONClient implements DatabaseClient {
 
   private List<JsonObject> getListJsonObject() {
     List<JsonObject> list = new ArrayList<>();
-    pool.forEach(pokemon -> list.add(pokemon.saveToJSON(new JsonObject())));
+    pool.forEach(pokemon -> list.add(pokemon.saveToJSON(DynamicRegistryManager.EMPTY,new JsonObject())));
     return list;
   }
 }
