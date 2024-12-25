@@ -4,7 +4,7 @@ import com.kingpixel.wondertrade.CobbleWonderTrade;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import org.bson.Document;
 
 import java.util.Date;
@@ -45,7 +45,7 @@ public class UserInfo {
     this.date = date.getTime();
   }
 
-  public static Date getDateWithCooldown(ServerPlayer player) {
+  public static Date getDateWithCooldown(ServerPlayerEntity player) {
     long currentTimeMillis = System.currentTimeMillis();
     long cooldownMillis = TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldown(player));
     return new Date(currentTimeMillis + cooldownMillis);

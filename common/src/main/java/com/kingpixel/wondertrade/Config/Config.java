@@ -2,13 +2,14 @@ package com.kingpixel.wondertrade.Config;
 
 import com.google.gson.Gson;
 import com.kingpixel.cobbleutils.Model.FilterPokemons;
-import com.kingpixel.cobbleutils.util.LuckPermsUtil;
+import com.kingpixel.cobbleutils.Model.WebHookData;
+import com.kingpixel.cobbleutils.api.PermissionApi;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DataBaseType;
 import com.kingpixel.wondertrade.model.DataBaseData;
 import lombok.Getter;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 public class Config {
   private boolean debug;
   private String lang;
+  private List<String> aliases;
+  private WebHookData discord_webhook;
   private DataBaseType databaseType;
   private DataBaseData databaseConfig;
   private boolean autoReset;
@@ -46,7 +49,6 @@ public class Config {
   private FilterPokemons filterGenerationPokemon;
   private List<String> poketradeblacklist;
   private List<String> legends;
-  private List<String> aliases;
 
   public Config() {
     debug = false;
@@ -54,6 +56,7 @@ public class Config {
     autoReset = false;
     cooldownReset = 30;
     databaseType = DataBaseType.JSON;
+    discord_webhook = new WebHookData("", "", "");
     databaseConfig = new DataBaseData();
     cooldown = 30;
     cooldownmessage = 15;
@@ -116,6 +119,7 @@ public class Config {
         cooldownPermission = config.getCooldownPermission();
         autoReset = config.isAutoReset();
         cooldownReset = config.getCooldownReset();
+        discord_webhook = config.getDiscord_webhook();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH, "config.json",
           data);
@@ -137,10 +141,10 @@ public class Config {
     }
   }
 
-  public Integer getCooldown(ServerPlayer player) {
+  public Integer getCooldown(ServerPlayerEntity player) {
     Integer cooldown = this.cooldown;
     for (Map.Entry<String, Integer> entry : cooldownPermission.entrySet()) {
-      if (LuckPermsUtil.checkPermission(player, entry.getKey())) {
+      if (PermissionApi.hasPermission(player, entry.getKey(), 4)) {
         if (entry.getValue() < cooldown) cooldown = entry.getValue();
       }
     }

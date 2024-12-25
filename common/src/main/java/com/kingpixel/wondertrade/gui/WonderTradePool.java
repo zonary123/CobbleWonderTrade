@@ -20,9 +20,10 @@ import com.kingpixel.cobbleutils.util.UIUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.text.Text;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,8 +76,8 @@ public class WonderTradePool {
       .fill(fill)
       .rectangle(0, 0, 4, 9, placeholder)
       .fillFromList(buttons)
-      .set(5, 4, close)
       .set(5, 0, previus)
+      .set(5, 4, close)
       .set(5, 8, next)
       .build();
 
@@ -90,7 +91,7 @@ public class WonderTradePool {
       GooeyButton pokemonButton = GooeyButton.builder()
         .display(PokemonItem.from(p))
         .title(AdventureTranslator.toNative(PokemonUtils.replace(CobbleUtils.language.getPokemonnameformat(), p)))
-        .lore(Component.class,
+        .lore(Text.class,
           AdventureTranslator.toNativeL(PokemonUtils.replace(CobbleUtils.language.getLorepokemon(), p)))
         .build();
       return pokemonButton;

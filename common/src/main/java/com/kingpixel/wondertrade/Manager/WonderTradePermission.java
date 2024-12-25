@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.permission.CobblemonPermission;
 import com.cobblemon.mod.common.api.permission.PermissionLevel;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.command.ServerCommandSource;
 
 /**
  * @author Carlos Varas Alonso - 10/05/2024 20:37
@@ -36,7 +36,7 @@ public class WonderTradePermission {
     return PermissionLevel.CHEAT_COMMANDS_AND_COMMAND_BLOCKS;
   }
 
-  public static boolean checkPermission(CommandSourceStack source, CobblemonPermission permission) {
+  public static boolean checkPermission(ServerCommandSource source, CobblemonPermission permission) {
     return Cobblemon.INSTANCE.getPermissionValidator().hasPermission(source, permission);
   }
 }

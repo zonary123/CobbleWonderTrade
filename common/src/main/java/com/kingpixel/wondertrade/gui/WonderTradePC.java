@@ -17,8 +17,8 @@ import com.kingpixel.cobbleutils.util.AdventureTranslator;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +31,12 @@ import java.util.concurrent.ExecutionException;
 
 
 public class WonderTradePC {
-  public static LinkedPage open(Player player) throws ExecutionException, InterruptedException {
+  public static LinkedPage open(ServerPlayerEntity player) throws ExecutionException, InterruptedException {
     return CompletableFuture.supplyAsync(() -> {
       try {
         ChestTemplate template = ChestTemplate.builder(6).build();
         List<Button> buttons = new ArrayList<>();
-        PCStore pcStore = Cobblemon.INSTANCE.getStorage().getPC(player.getUUID());
+        PCStore pcStore = Cobblemon.INSTANCE.getStorage().getPC(player.getUuid());
 
         pcStore.forEach((pokemon) -> {
           buttons.add(WonderTrade.createButtonPokemon(pokemon));
@@ -51,7 +51,7 @@ public class WonderTradePC {
           .title(AdventureTranslator.toNative(CobbleUtils.language.getItemPrevious().getDisplayname()))
           .linkType(LinkType.Previous)
           .build();
- 
+
         LinkedPageButton next = LinkedPageButton.builder()
           .display(CobbleUtils.language.getItemNext().getItemStack())
           .title(AdventureTranslator.toNative(CobbleUtils.language.getItemNext().getDisplayname()))
@@ -61,7 +61,7 @@ public class WonderTradePC {
         GooeyButton close = GooeyButton.builder()
           .display(CobbleUtils.language.getItemClose().getItemStack())
           .title(AdventureTranslator.toNative(CobbleUtils.language.getItemClose().getDisplayname()))
-          .lore(Component.class, AdventureTranslator.toNativeL(CobbleUtils.language.getItemClose().getLore()))
+          .lore(Text.class, AdventureTranslator.toNativeL(CobbleUtils.language.getItemClose().getLore()))
           .onClick((action) -> {
             try {
               UIManager.openUIForcefully(action.getPlayer(), WonderTrade.open(action.getPlayer()));

@@ -1,5 +1,6 @@
 package com.kingpixel.wondertrade.database;
 
+import com.kingpixel.cobbleutils.Model.FilterPokemons;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 
 import java.util.Date;
@@ -16,9 +17,10 @@ public class DatabaseClientFactory {
 
   public static void createDatabaseClient(DataBaseType type, String uri, String database, String user,
                                           String password) {
-    if (CobbleWonderTrade.config.isAutoReset()) {
+    if (CobbleWonderTrade.config.isAutoReset() && cooldown == null) {
       cooldown = new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldownReset()));
     }
+    FilterPokemons.removeCache(CobbleWonderTrade.MOD_ID);
     if (databaseClient != null) {
       databaseClient.disconnect();
     }
@@ -29,4 +31,6 @@ public class DatabaseClientFactory {
     }
     databaseClient.connect();
   }
+
+
 }

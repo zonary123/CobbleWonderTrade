@@ -3,7 +3,7 @@ package com.kingpixel.wondertrade.database;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.google.gson.JsonObject;
 import com.kingpixel.wondertrade.model.UserInfo;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +22,7 @@ public interface DatabaseClient {
 
   Pokemon putPokemon(Pokemon pokemon);
 
-  UserInfo getUserInfo(ServerPlayer player);
+  UserInfo getUserInfo(ServerPlayerEntity player);
 
   UserInfo getUserinfo(UUID uuid);
 

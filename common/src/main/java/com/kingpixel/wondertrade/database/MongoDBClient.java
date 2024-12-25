@@ -2,6 +2,7 @@ package com.kingpixel.wondertrade.database;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.google.gson.JsonObject;
+import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.mongodb.DocumentConverter;
 import com.kingpixel.wondertrade.model.UserInfo;
@@ -13,7 +14,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -114,14 +115,14 @@ public class MongoDBClient implements DatabaseClient {
   }
 
   @Override
-  public UserInfo getUserInfo(ServerPlayer player) {
-    Document document = users.find(new Document("playeruuid", player.getUUID().toString())).first();
-    return document != null ? UserInfo.fromDocument(document) : new UserInfo(player.getUUID());
+  public UserInfo getUserInfo(ServerPlayerEntity player) {
+    Document document = users.find(new Document("playeruuid", player.getUuid().toString())).first();
+    return document != null ? UserInfo.fromDocument(document) : new UserInfo(player.getUuid());
   }
 
   @Override
   public UserInfo getUserinfo(UUID uuid) {
-    ServerPlayer player = CobbleWonderTrade.server.getPlayerList().getPlayer(uuid);
+    ServerPlayerEntity player = CobbleWonderTrade.server.getPlayerManager().getPlayer(uuid);
     if (player == null) {
       return null;
     }
@@ -158,7 +159,8 @@ public class MongoDBClient implements DatabaseClient {
     Bson filter = Filters.eq("playeruuid", userInfo.getPlayeruuid().toString());
     Bson updateOperation = Updates.combine(
       Updates.set("messagesend", userInfo.isMessagesend()),
-      Updates.set("date", UserInfo.getDateWithCooldown(CobbleWonderTrade.server.getPlayerList().getPlayer(userInfo.getPlayeruuid())))
+      Updates.set("date",
+        UserInfo.getDateWithCooldown(CobbleWonderTrade.server.getPlayerManager().getPlayer(userInfo.getPlayeruuid())))
     );
     users.updateOne(filter, updateOperation, new UpdateOptions().upsert(true));
     return userInfo;
@@ -166,37 +168,36 @@ public class MongoDBClient implements DatabaseClient {
 
   @Override
   public void resetPool(boolean force) {
-    List<Pokemon> a = getSpecialPool(false);
-    if (a.isEmpty()) {
+    List<Pokemon> specialPool = getSpecialPool(false);
+    if (specialPool.isEmpty()) {
       force = true;
-    } else if (!force && a.size() == CobbleWonderTrade.config.getSizePool()) {
+    } else if (!force && specialPool.size() == CobbleWonderTrade.config.getSizePool()) {
       return;
     }
 
     long targetSize = CobbleWonderTrade.config.getSizePool();
-    long count = pool.countDocuments();
-    if (!force && count == targetSize) {
+    long currentSize = pool.countDocuments();
+
+    if (!force && currentSize == targetSize) {
       return;
     }
 
-    List<Document> documents = pool.find().into(new ArrayList<>());
-    if (count > targetSize) {
-      List<Document> sublist = documents.stream().limit(targetSize).collect(Collectors.toList());
-      pool.drop();
-      pool.insertMany(sublist);
-    } else {
-      for (int i = documents.size(); i < targetSize; i++) {
-        try {
-          Document randomPokemonDoc = Document.parse(WonderTradeUtil.getRandomPokemon().saveToJSON(new JsonObject()).toString());
-          documents.add(randomPokemonDoc);
-        } catch (ExecutionException | InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-      }
-      pool.drop();
-      pool.insertMany(documents);
+    pool.drop();
+    try {
+      List<Pokemon> generatedPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon()
+        .generateRandomPokemons(CobbleWonderTrade.MOD_ID, "pool", CobbleWonderTrade.config.getSizePool());
+
+      List<Document> pokemonDocuments = generatedPokemons.stream().map(pokemon -> {
+        pokemon.setLevel(Utils.RANDOM.nextInt(CobbleWonderTrade.config.getMinlv(), CobbleWonderTrade.config.getMaxlv()));
+        return Document.parse(pokemon.saveToJSON(new JsonObject()).toString());
+      }).collect(Collectors.toList());
+
+      pool.insertMany(pokemonDocuments);
+    } catch (Exception e) {
+      CobbleWonderTrade.LOGGER.error("Error resetting pool: ", e);
     }
   }
+
 
   @Override
   public void disconnect() {

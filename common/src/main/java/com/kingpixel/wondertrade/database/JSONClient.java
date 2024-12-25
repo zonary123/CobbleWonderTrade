@@ -11,7 +11,7 @@ import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.io.File;
 import java.io.IOException;
@@ -99,9 +99,9 @@ public class JSONClient implements DatabaseClient {
   }
 
   @Override
-  public UserInfo getUserInfo(ServerPlayer player) {
-    if (userInfoMap.containsKey(player.getUUID())) {
-      return userInfoMap.get(player.getUUID());
+  public UserInfo getUserInfo(ServerPlayerEntity player) {
+    if (userInfoMap.containsKey(player.getUuid())) {
+      return userInfoMap.get(player.getUuid());
     } else {
       return readUserInfo(player);
     }
@@ -112,7 +112,7 @@ public class JSONClient implements DatabaseClient {
     if (userInfoMap.containsKey(uuid)) {
       return userInfoMap.get(uuid);
     } else {
-      ServerPlayer player = CobbleWonderTrade.server.getPlayerList().getPlayer(uuid);
+      ServerPlayerEntity player = CobbleWonderTrade.server.getPlayerManager().getPlayer(uuid);
       return readUserInfo(player);
     }
   }
@@ -143,19 +143,6 @@ public class JSONClient implements DatabaseClient {
     }
   }
 
-  @Override
-  public void resetPool(boolean force) {
-    try {
-      if (pool.isEmpty() || force || pool.size() != CobbleWonderTrade.config.getSizePool()) {
-        pool.clear();
-        pool = CobbleWonderTrade.config.getFilterGenerationPokemon()
-          .generateRandomPokemons(CobbleWonderTrade.MOD_ID, "pool", CobbleWonderTrade.config.getSizePool());
-        savePool();
-      }
-    } catch (Exception e) {
-      CobbleWonderTrade.LOGGER.error("Error resetting pool: ", e);
-    }
-  }
 
   @Override
   public void disconnect() {
@@ -191,6 +178,22 @@ public class JSONClient implements DatabaseClient {
     }
   }
 
+  @Override
+  public void resetPool(boolean force) {
+    try {
+      if (pool.isEmpty() || force || pool.size() != CobbleWonderTrade.config.getSizePool()) {
+        pool.clear();
+        pool = CobbleWonderTrade.config.getFilterGenerationPokemon()
+          .generateRandomPokemons(CobbleWonderTrade.MOD_ID, "pool", CobbleWonderTrade.config.getSizePool());
+        pool.forEach(pokemon -> pokemon.setLevel(Utils.RANDOM.nextInt(CobbleWonderTrade.config.getMinlv(),
+          CobbleWonderTrade.config.getMaxlv())));
+        savePool();
+      }
+    } catch (Exception e) {
+      CobbleWonderTrade.LOGGER.error("Error resetting pool: ", e);
+    }
+  }
+
   private void savePool() {
     try {
       Utils.writeFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", gson.toJson(getListJsonObject()));
@@ -211,15 +214,24 @@ public class JSONClient implements DatabaseClient {
     userInfoMap.forEach((uuid, userInfo) -> saveUserInfo(userInfo));
   }
 
-  private UserInfo readUserInfo(ServerPlayer player) {
+  private UserInfo readUserInfo(ServerPlayerEntity player) {
     try {
-      String content = Utils.readFileSync(Utils.getAbsolutePath(CobbleWonderTrade.PATH_DATA_USER + player.getUUID() + ".json"));
-      UserInfo userInfo = gson.fromJson(content, UserInfo.class);
-      userInfoMap.put(player.getUUID(), userInfo);
-      return userInfo;
+      File file = Utils.getAbsolutePath(CobbleWonderTrade.PATH_DATA_USER + player.getUuid() + ".json");
+      if (!file.exists()) {
+        UserInfo newUserInfo = new UserInfo(player.getUuid());
+        userInfoMap.put(player.getUuid(), newUserInfo);
+        saveUserInfo(newUserInfo);
+        return newUserInfo;
+      } else {
+        String content = Utils.readFileSync(file);
+        UserInfo userInfo = gson.fromJson(content, UserInfo.class);
+        userInfoMap.put(player.getUuid(), userInfo);
+        return userInfo;
+      }
     } catch (Exception e) {
-      UserInfo newUserInfo = new UserInfo(player.getUUID());
-      userInfoMap.put(player.getUUID(), newUserInfo);
+      e.printStackTrace();
+      UserInfo newUserInfo = new UserInfo(player.getUuid());
+      userInfoMap.put(player.getUuid(), newUserInfo);
       saveUserInfo(newUserInfo);
       return newUserInfo;
     }

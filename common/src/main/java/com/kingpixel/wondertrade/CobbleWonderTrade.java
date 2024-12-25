@@ -1,5 +1,6 @@
 package com.kingpixel.wondertrade;
 
+import club.minnced.discord.webhook.WebhookClient;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.util.AdventureTranslator;
 import com.kingpixel.cobbleutils.util.PlayerUtils;
@@ -42,9 +43,9 @@ public class CobbleWonderTrade {
   public static WonderTradeConfig dexpermission = new WonderTradeConfig();
   public static WonderTradePermission permissions = new WonderTradePermission();
   public static SpawnRates spawnRates = new SpawnRates();
+  public static WebhookClient webhookClient;
   private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
   private static final List<ScheduledFuture<?>> tasks = new ArrayList<>();
-
 
   public static void init() {
     LOGGER.info("Initializing " + MOD_NAME);
@@ -59,6 +60,13 @@ public class CobbleWonderTrade {
       config.getDatabaseConfig().getDatabase(), config.getDatabaseConfig().getUser()
       , config.getDatabaseConfig().getPassword());
     DatabaseClientFactory.databaseClient.resetPool(false);
+    if (config.getDiscord_webhook().isENABLED()){
+      try {
+        webhookClient = WebhookClient.withUrl(config.getDiscord_webhook().getURL_WEBHOOK());
+      } catch (Exception e) {
+        LOGGER.error("Error loading webhook: {}", e.getMessage());
+      }
+    }
   }
 
   private static void events() {
@@ -69,15 +77,11 @@ public class CobbleWonderTrade {
 
     LifecycleEvent.SERVER_STARTED.register(server -> load());
 
-    PlayerEvent.PLAYER_JOIN.register(player -> {
-      DatabaseClientFactory.databaseClient.getUserInfo(player);
-    });
+    PlayerEvent.PLAYER_JOIN.register(player -> DatabaseClientFactory.databaseClient.getUserInfo(player));
 
-    PlayerEvent.PLAYER_QUIT.register(player -> {
-      DatabaseClientFactory.databaseClient.getUserInfo(player);
-    });
+    PlayerEvent.PLAYER_QUIT.register(player -> DatabaseClientFactory.databaseClient.getUserInfo(player));
 
-    LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> server = level.getLevel().getServer());
+    LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> server = level.getServer());
 
     LifecycleEvent.SERVER_STOPPING.register((server) -> {
       tasks.forEach(task -> task.cancel(true));
@@ -112,9 +116,7 @@ public class CobbleWonderTrade {
     ScheduledFuture<?> broadcastTask = scheduler.scheduleAtFixedRate(() -> {
       if (server != null) {
         List<Pokemon> pokemons = new ArrayList<>();
-        DatabaseClientFactory.databaseClient.getPokemonList(false).forEach(pokemon -> {
-          pokemons.add(Pokemon.Companion.loadFromJSON(pokemon));
-        });
+        DatabaseClientFactory.databaseClient.getPokemonList(false).forEach(pokemon -> pokemons.add(Pokemon.Companion.loadFromJSON(pokemon)));
         WonderTradeUtil.messagePool(pokemons);
       }
     }, CobbleWonderTrade.config.getCooldownmessage(), CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
@@ -122,7 +124,7 @@ public class CobbleWonderTrade {
 
     ScheduledFuture<?> autoResetPool = scheduler.scheduleAtFixedRate(() -> {
       if (CobbleWonderTrade.config.isAutoReset()) {
-        if (PlayerUtils.isCooldown(DatabaseClientFactory.cooldown))
+        if (!PlayerUtils.isCooldown(DatabaseClientFactory.cooldown))
           DatabaseClientFactory.databaseClient.resetPool(true);
       }
     }, 0, 1, TimeUnit.MINUTES);
@@ -130,14 +132,14 @@ public class CobbleWonderTrade {
 
     ScheduledFuture<?> playerCheckTask = scheduler.scheduleAtFixedRate(() -> {
       if (server != null) {
-        server.getPlayerList().getPlayers().forEach(player -> {
+        server.getPlayerManager().getPlayerList().forEach(player -> {
           UserInfo userInfo;
 
           userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
-          if (PlayerUtils.isCooldown(userInfo.getDate()) && !userInfo.isMessagesend()) {
+          if (!PlayerUtils.isCooldown(userInfo.getDate()) && !userInfo.isMessagesend()) {
             userInfo.setMessagesend(true);
             DatabaseClientFactory.databaseClient.putUserInfo(userInfo, true);
-            player.sendSystemMessage(AdventureTranslator.toNative(language.getMessagewondertradeready()
+            player.sendMessage(AdventureTranslator.toNative(language.getMessagewondertradeready()
               .replace("%prefix%",
                 language.getPrefix()
               )));

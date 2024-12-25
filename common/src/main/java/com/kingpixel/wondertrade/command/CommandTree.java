@@ -17,10 +17,10 @@ import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -31,10 +31,10 @@ import java.util.concurrent.ExecutionException;
 public class CommandTree {
 
   public static void register(
-    CommandDispatcher<CommandSourceStack> dispatcher
+    CommandDispatcher<ServerCommandSource> dispatcher
   ) {
     for (String s : CobbleWonderTrade.config.getAliases()) {
-      LiteralArgumentBuilder<CommandSourceStack> base = Commands.literal(s)
+      LiteralArgumentBuilder<ServerCommandSource> base = CommandManager.literal(s)
         .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION));
       // /wt
       dispatcher.register(
@@ -45,10 +45,10 @@ public class CommandTree {
       dispatcher.register(
         base
           .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_OTHER_PERMISSION))
-          .then(Commands.literal("other")
+          .then(CommandManager.literal("other")
             .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_OTHER_PERMISSION))
             .then(
-              Commands.argument("player", EntityArgument.player())
+              CommandManager.argument("player", EntityArgumentType.player())
                 .executes(new CommandWonderTradeOther())
             ))
       );
@@ -56,12 +56,12 @@ public class CommandTree {
       // /wt reload
       dispatcher.register(base
         .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
-        .then(Commands.literal("reload")
+        .then(CommandManager.literal("reload")
           .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
           .executes(context -> {
             CobbleWonderTrade.load();
-            if (context.getSource().isPlayer()) {
-              Objects.requireNonNull(context.getSource().getPlayer()).sendSystemMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
+            if (context.getSource().isExecutedByPlayer()) {
+              Objects.requireNonNull(context.getSource().getPlayer()).sendMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
             } else {
               CobbleWonderTrade.LOGGER.info(CobbleWonderTrade.language.getReload().replace("%prefix%",
                 CobbleWonderTrade.language.getPrefix()));
@@ -72,7 +72,7 @@ public class CommandTree {
       // /wt pool
       if (CobbleWonderTrade.config.isPoolview()) {
         dispatcher.register(base
-          .then(Commands.literal("pool")
+          .then(CommandManager.literal("pool")
             .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
             .executes(new CommandWonderTradePool())));
       }
@@ -80,32 +80,32 @@ public class CommandTree {
       // /wt resetcooldown
       dispatcher.register(base
         .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
-        .then(Commands.literal("resetcooldown")
+        .then(CommandManager.literal("resetcooldown")
           .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
           .executes(context -> {
-            if (!context.getSource().isPlayer()) {
-              context.getSource().getServer().sendSystemMessage(WonderTradeUtil.toNative("You must be a player to use " +
+            if (!context.getSource().isExecutedByPlayer()) {
+              context.getSource().getServer().sendMessage(WonderTradeUtil.toNative("You must be a player to use " +
                 "this command"));
               return 0;
             }
 
-            ServerPlayer player = context.getSource().getPlayer();
+            ServerPlayerEntity player = context.getSource().getPlayer();
             if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-              player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
+              player.sendMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
               return 0;
             }
-            DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), true);
+            DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUuid()), true);
             return 1;
           })
-          .then(Commands.argument("player", EntityArgument.player())
+          .then(CommandManager.argument("player", EntityArgumentType.player())
             .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
             .executes(context -> {
-              ServerPlayer player = EntityArgument.getPlayer(context, "player");
+              ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
               if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-                player.sendSystemMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
+                player.sendMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
                 return 0;
               }
-              DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUUID()), true);
+              DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUuid()), true);
               return 1;
             })
           )
@@ -113,13 +113,13 @@ public class CommandTree {
       );
 
       // /wt pc
-      dispatcher.register(base.then(Commands.literal("pc")
+      dispatcher.register(base.then(CommandManager.literal("pc")
         .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
         .executes(context -> {
-          ServerPlayer player = context.getSource().getPlayerOrException();
+          ServerPlayerEntity player = context.getSource().getPlayer();
           if (player == null) return 0;
           if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-            player.sendSystemMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
+            player.sendMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
             return 0;
           }
           try {
@@ -133,11 +133,11 @@ public class CommandTree {
       // /wt <slot>
       dispatcher.register(
         base.then(
-          Commands.literal("slot")
+          CommandManager.literal("slot")
             .requires(source -> WonderTradePermission.checkPermission(source,
               CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
             .then(
-              Commands.argument("slot", IntegerArgumentType.integer(1, 6))
+              CommandManager.argument("slot", IntegerArgumentType.integer(1, 6))
                 .suggests(
                   (context, builder) -> {
                     for (int i = 1; i <= 6; i++) {
@@ -147,24 +147,25 @@ public class CommandTree {
                   }
                 )
                 .then(
-                  Commands.literal("confirm")
+                  CommandManager.literal("confirm")
                     .executes(
                       context -> {
-                        if (!context.getSource().isPlayer()) {
-                          context.getSource().getServer().sendSystemMessage(AdventureTranslator.toNative("You must be a player to use this command"));
+                        if (!context.getSource().isExecutedByPlayer()) {
+                          context.getSource().getServer().sendMessage(AdventureTranslator.toNative("You must be a player to " +
+                            "use this command"));
                           return 0;
                         }
-                        ServerPlayer player = context.getSource().getPlayer();
+                        ServerPlayerEntity player = context.getSource().getPlayer();
                         if (player == null) return 0;
                         if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-                          player.sendSystemMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
+                          player.sendMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
                           return 0;
                         }
                         Integer slot = IntegerArgumentType.getInteger(context, "slot");
                         slot--;
                         if (slot < 0 || slot > 5) return 0;
                         try {
-                          Pokemon pokemon = Cobblemon.INSTANCE.getStorage().getParty(player.getUUID()).get(slot);
+                          Pokemon pokemon = Cobblemon.INSTANCE.getStorage().getParty(player.getUuid()).get(slot);
                           if (pokemon != null)
                             WonderTradeConfirm.trade(player, pokemon);
                         } catch (Exception e) {
@@ -181,10 +182,10 @@ public class CommandTree {
       // /wt reset
       dispatcher.register(
         base
-          .requires(source -> source.hasPermission(2))
+          .requires(source -> source.hasPermissionLevel(2))
           .then(
-            Commands.literal("reset")
-              .requires(source -> source.hasPermission(2))
+            CommandManager.literal("reset")
+              .requires(source -> source.hasPermissionLevel(2))
               .executes(context -> {
                 DatabaseClientFactory.databaseClient.resetPool(true);
                 return 1;

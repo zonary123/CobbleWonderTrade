@@ -43,6 +43,8 @@ public class Lang {
   private ItemModel itemnotallowlegendary;
   private ItemModel Pc;
   private List<String> lorepokemon;
+  private String title_webhook;
+  private List<String> message_WebHook;
 
   public Lang() {
     prefix = "&8[<gradient:#ff7900:#ffdbba>WonderTrade&8] ";
@@ -92,6 +94,22 @@ public class Lang {
     itemnotallowlegendary = new ItemModel("cobblemon:master_ball", "<gradient:#db2e2e:#e68c8c>Not allow legendary",
       List.of(
         ""));
+    title_webhook = "WonderTrade";
+    message_WebHook = List.of(
+      "%pokemon% %gender% %form% %shiny% %player%",
+      "Shinys: %shiny%",
+      " - Ivs: %ivshp% / %ivsatk% / %ivsdef% / %ivsspa% / %ivsspdef% / %ivsspeed%",
+      " - Evs: %evshp% / %evsatk% / %evsdef% / %evsspa% / %evsspdef% / %evsspeed%",
+      "Ability: %ability%",
+      "Nature: %nature%",
+      "Owner: %owner%",
+      "Country: %country%",
+      "Ball: %ball%",
+      "Size: %size%",
+      "Moves: %move1% - %move2% - %move3% - %move4%",
+      "Tradeable: %tradeable%",
+      "Breedable: %breedable%"
+    );
   }
 
 
@@ -129,6 +147,8 @@ public class Lang {
         messageNoPoolView = lang.getMessageNoPoolView();
         messageisLegendaryOrShinyMessage = lang.getMessageisLegendaryOrShinyMessage();
         messageThePokemonNotHaveMinLevel = lang.getMessageThePokemonNotHaveMinLevel();
+        title_webhook = lang.getTitle_webhook();
+        message_WebHook = lang.getMessage_WebHook();
         Pc = lang.getPc();
         String data = gson.toJson(this);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",

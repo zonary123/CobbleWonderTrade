@@ -10,9 +10,8 @@ import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
-
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -21,10 +20,10 @@ import java.util.concurrent.ExecutionException;
  */
 public class WonderTradeUtil {
 
-  public static void emiteventcaptured(Pokemon pokemon, Player player) {
+  public static void emiteventcaptured(Pokemon pokemon, ServerPlayerEntity player) {
     PokemonCapturedEvent event = new PokemonCapturedEvent(pokemon,
-      Objects.requireNonNull(CobbleWonderTrade.server.getPlayerList().getPlayer(player.getUUID())),
-      new EmptyPokeBallEntity(CobbleWonderTrade.server.overworld())
+      Objects.requireNonNull(CobbleWonderTrade.server.getPlayerManager().getPlayer(player.getUuid())),
+      new EmptyPokeBallEntity(CobbleWonderTrade.server.getOverworld())
     );
     CobblemonEvents.POKEMON_CAPTURED.emit(event);
   }
@@ -47,15 +46,15 @@ public class WonderTradeUtil {
 
   private static final Random RANDOM = new Random();
 
-  public static Component toNative(String message) {
+  public static Text toNative(String message) {
     return AdventureTranslator.toNativeWithOutPrefix(message
       .replace("%prefix%", CobbleWonderTrade.language.getPrefix()));
   }
 
   public static void broadcast(String message) {
     if (message.isEmpty()) return;
-    CobbleWonderTrade.server.getPlayerList().getPlayers().forEach(player -> {
-      player.sendSystemMessage(toNative(message));
+    CobbleWonderTrade.server.getPlayerManager().getPlayerList().forEach(player -> {
+      player.sendMessage(toNative(message));
     });
   }
 
