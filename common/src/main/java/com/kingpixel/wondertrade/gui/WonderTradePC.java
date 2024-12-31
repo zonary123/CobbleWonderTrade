@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 
 public class WonderTradePC {
   public static LinkedPage open(ServerPlayerEntity player) throws ExecutionException, InterruptedException {
-    return CompletableFuture.supplyAsync(() -> {
       try {
         ChestTemplate template = ChestTemplate.builder(6).build();
         List<Button> buttons = new ArrayList<>();
@@ -43,6 +42,7 @@ public class WonderTradePC {
         pcStore.forEach((pokemon) -> {
           buttons.add(WonderTrade.createButtonPokemon(pokemon));
         });
+
         GooeyButton fill = GooeyButton.builder()
           .display(Utils.parseItemId(CobbleWonderTrade.language.getFill()))
           .with(DataComponentTypes.ITEM_NAME,AdventureTranslator.toNative(""))
@@ -77,7 +77,6 @@ public class WonderTradePC {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
-    }).get();
   }
 }
 
