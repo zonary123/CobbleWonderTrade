@@ -109,16 +109,6 @@ public class JSONClient implements DatabaseClient {
   }
 
   @Override
-  public UserInfo getUserinfo(UUID uuid) {
-    if (userInfoMap.containsKey(uuid)) {
-      return userInfoMap.get(uuid);
-    } else {
-      ServerPlayerEntity player = CobbleWonderTrade.server.getPlayerManager().getPlayer(uuid);
-      return readUserInfo(player);
-    }
-  }
-
-  @Override
   public UserInfo putUserInfo(UserInfo userInfo) {
     try {
       userInfoMap.put(userInfo.getPlayeruuid(), userInfo);

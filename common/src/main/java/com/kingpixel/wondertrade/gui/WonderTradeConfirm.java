@@ -261,9 +261,8 @@ public class WonderTradeConfirm {
       .replace("%move2%", getMove(pokemon.getMoveSet().get(1)))
       .replace("%move3%", getMove(pokemon.getMoveSet().get(2)))
       .replace("%move4%", getMove(pokemon.getMoveSet().get(3)))
-      .replace("&", "§")
-      .replaceAll("$.", "")
-      .replaceAll("<.*?>", "")
+      .replaceAll("<[^>]*>", "")
+      .replaceAll("[&§].", "")
     );
     return PokemonUtils.replace(String.join("\n", message), pokemon);
   }

@@ -30,6 +30,7 @@ public class MongoDBClient implements DatabaseClient {
   private MongoCollection<Document> users;
   private final MongoClient client;
   private final MongoDatabase database;
+  private boolean isConnected = false;
 
   public MongoDBClient(String uri, String databaseName, String user, String password) {
     this.client = MongoClients.create(uri);
@@ -44,6 +45,7 @@ public class MongoDBClient implements DatabaseClient {
       createCollection("pool");
       this.users = database.getCollection("users");
       this.pool = database.getCollection("pool");
+      isConnected = true;
     } catch (Exception e) {
       CobbleWonderTrade.LOGGER.error("Error while connecting to MongoDB: " + e.getMessage());
     }
@@ -117,17 +119,11 @@ public class MongoDBClient implements DatabaseClient {
 
   @Override
   public UserInfo getUserInfo(ServerPlayerEntity player) {
+    if (!isConnected) {
+      throw new IllegalStateException("MongoDB client is not connected");
+    }
     Document document = users.find(new Document("playeruuid", player.getUuid().toString())).first();
     return document != null ? UserInfo.fromDocument(document) : new UserInfo(player.getUuid());
-  }
-
-  @Override
-  public UserInfo getUserinfo(UUID uuid) {
-    ServerPlayerEntity player = CobbleWonderTrade.server.getPlayerManager().getPlayer(uuid);
-    if (player == null) {
-      return null;
-    }
-    return getUserInfo(player);
   }
 
   @Override
@@ -141,16 +137,20 @@ public class MongoDBClient implements DatabaseClient {
       return updateUserInfo(userInfo);
     } else {
       userInfo.setDate(System.currentTimeMillis());
-      Document existingDoc = users.find(new Document("playeruuid", userInfo.getPlayeruuid().toString())).first();
-      if (existingDoc != null) {
-        Bson filter = Filters.eq("playeruuid", userInfo.getPlayeruuid().toString());
-        Bson updateOperation = Updates.combine(
-          Updates.set("messagesend", userInfo.isMessagesend()),
-          Updates.set("date", userInfo.getDate())
-        );
-        users.updateOne(filter, updateOperation, new UpdateOptions().upsert(true));
-      } else {
-        users.insertOne(userInfo.toDocument());
+      try {
+        Document existingDoc = users.find(new Document("playeruuid", userInfo.getPlayeruuid().toString())).first();
+        if (existingDoc != null) {
+          Bson filter = Filters.eq("playeruuid", userInfo.getPlayeruuid().toString());
+          Bson updateOperation = Updates.combine(
+            Updates.set("messagesend", userInfo.isMessagesend()),
+            Updates.set("date", userInfo.getDate())
+          );
+          users.updateOne(filter, updateOperation, new UpdateOptions().upsert(true));
+        } else {
+          users.insertOne(userInfo.toDocument());
+        }
+      } catch (Exception e) {
+        CobbleWonderTrade.LOGGER.error("Error while putting user info: " + e.getMessage());
       }
       return userInfo;
     }

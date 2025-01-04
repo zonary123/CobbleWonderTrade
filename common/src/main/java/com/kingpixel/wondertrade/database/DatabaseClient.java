@@ -24,8 +24,6 @@ public interface DatabaseClient {
 
   UserInfo getUserInfo(ServerPlayerEntity player);
 
-  UserInfo getUserinfo(UUID uuid);
-
   UserInfo putUserInfo(UserInfo userInfo);
 
   UserInfo putUserInfo(UserInfo userInfo, boolean update);
