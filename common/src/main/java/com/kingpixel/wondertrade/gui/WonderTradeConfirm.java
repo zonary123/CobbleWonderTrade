@@ -128,7 +128,8 @@ public class WonderTradeConfirm {
       return false;
     }
 
-    Pokemon pokemongive = DatabaseClientFactory.databaseClient.putPokemon(pokemonplayer).clone(true);
+    Pokemon pokemongive = new Pokemon().copyFrom(DatabaseClientFactory.databaseClient.putPokemon(pokemonplayer));
+    pokemongive.setUuid(UUID.randomUUID());
 
     if (!CobbleWonderTrade.config.isSavepool()) {
       pokemongive.createPokemonProperties(List.of(
