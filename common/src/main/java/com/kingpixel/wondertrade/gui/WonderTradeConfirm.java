@@ -26,6 +26,7 @@ import com.kingpixel.wondertrade.model.UserInfo;
 import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
@@ -128,8 +129,7 @@ public class WonderTradeConfirm {
       return false;
     }
 
-    Pokemon pokemongive = new Pokemon().copyFrom(DatabaseClientFactory.databaseClient.putPokemon(pokemonplayer));
-    pokemongive.setUuid(UUID.randomUUID());
+    Pokemon pokemongive = DatabaseClientFactory.databaseClient.putPokemon(pokemonplayer).clone(true, DynamicRegistryManager.EMPTY);
 
     if (!CobbleWonderTrade.config.isSavepool()) {
       pokemongive.createPokemonProperties(List.of(
