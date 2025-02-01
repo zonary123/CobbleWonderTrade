@@ -1,5 +1,6 @@
 package com.kingpixel.wondertrade;
 
+import ca.landonjw.gooeylibs2.api.tasks.Task;
 import club.minnced.discord.webhook.WebhookClient;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.util.AdventureTranslator;
@@ -45,8 +46,9 @@ public class CobbleWonderTrade {
   public static WonderTradePermission permissions = new WonderTradePermission();
   public static SpawnRates spawnRates = new SpawnRates();
   public static WebhookClient webhookClient;
-  private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-  private static final List<ScheduledFuture<?>> tasks = new ArrayList<>();
+  private static Task broadcastTask;
+  private static Task autoResetPool;
+  private static Task playerCheckTask;
 
   public static void init() {
     LOGGER.info("Initializing " + MOD_NAME);
@@ -85,17 +87,7 @@ public class CobbleWonderTrade {
     LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> server = level.getServer());
 
     LifecycleEvent.SERVER_STOPPING.register((server) -> {
-      tasks.forEach(task -> task.cancel(true));
-      tasks.clear();
       DatabaseClientFactory.databaseClient.disconnect();
-      scheduler.shutdown();
-      try {
-        if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-          scheduler.shutdownNow();
-        }
-      } catch (InterruptedException ex) {
-        scheduler.shutdownNow();
-      }
       LOGGER.info("Stopping " + MOD_NAME);
     });
 
@@ -107,31 +99,34 @@ public class CobbleWonderTrade {
   }
 
   private static void tasks() {
-    for (ScheduledFuture<?> task : tasks) {
-      if (task != null && !task.isCancelled()) {
-        task.cancel(false);
-      }
-    }
-    tasks.clear();
 
-    ScheduledFuture<?> broadcastTask = scheduler.scheduleAtFixedRate(() -> {
+    if (broadcastTask != null) broadcastTask.setExpired();
+
+    broadcastTask = Task.builder().execute(() -> {
       if (server != null) {
         List<Pokemon> pokemons = new ArrayList<>();
         DatabaseClientFactory.databaseClient.getPokemonList(false).forEach(pokemon -> pokemons.add(Pokemon.Companion.loadFromJSON(DynamicRegistryManager.EMPTY,pokemon)));
         WonderTradeUtil.messagePool(pokemons);
       }
-    }, CobbleWonderTrade.config.getCooldownmessage(), CobbleWonderTrade.config.getCooldownmessage(), TimeUnit.MINUTES);
-    tasks.add(broadcastTask);
+    })
+      .infinite()
+      .interval(20L * 60 * config.getCooldownmessage())
+      .build();
 
-    ScheduledFuture<?> autoResetPool = scheduler.scheduleAtFixedRate(() -> {
-      if (CobbleWonderTrade.config.isAutoReset()) {
+
+    if (autoResetPool != null) autoResetPool.setExpired();
+    autoResetPool = Task.builder().execute(() -> {
+      if (config.isAutoReset()) {
         if (!PlayerUtils.isCooldown(DatabaseClientFactory.cooldown))
           DatabaseClientFactory.databaseClient.resetPool(true);
       }
-    }, 0, 1, TimeUnit.MINUTES);
-    tasks.add(autoResetPool);
+    })
+      .infinite()
+      .interval(20L * 60 * config.getCooldownReset())
+      .build();
 
-    ScheduledFuture<?> playerCheckTask = scheduler.scheduleAtFixedRate(() -> {
+    if (playerCheckTask != null) playerCheckTask.setExpired();
+    playerCheckTask = Task.builder().execute(() -> {
       if (server != null) {
         server.getPlayerManager().getPlayerList().forEach(player -> {
           UserInfo userInfo;
@@ -148,7 +143,9 @@ public class CobbleWonderTrade {
 
         });
       }
-    }, 0, 30, TimeUnit.SECONDS);
-    tasks.add(playerCheckTask);
+    })
+      .infinite()
+      .interval(20L * 30)
+      .build();
   }
 }
