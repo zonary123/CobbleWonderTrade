@@ -1,36 +1,35 @@
 package com.kingpixel.wondertrade.database;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
-import com.google.gson.JsonObject;
 import com.kingpixel.wondertrade.model.UserInfo;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Carlos Varas Alonso - 24/07/2024 21:02
  */
-public interface DatabaseClient {
-  void connect();
+public abstract class DatabaseClient {
+  public abstract void connect();
 
-  List<Pokemon> getSpecialPool(boolean special);
+  public abstract void disconnect();
 
-  List<JsonObject> getPokemonList(boolean special);
+  public abstract UserInfo getUserInfo(ServerPlayerEntity player);
 
-  Pokemon getRandomPokemon();
+  public abstract void updateUserInfo(ServerPlayerEntity player, UserInfo userinfo);
 
-  Pokemon putPokemon(Pokemon pokemon);
+  public abstract void fixPool();
 
-  UserInfo getUserInfo(ServerPlayerEntity player);
+  public abstract void restartPool();
 
-  UserInfo putUserInfo(UserInfo userInfo);
+  public abstract Pokemon tradePokemon(ServerPlayerEntity player, Pokemon pokemon);
 
-  UserInfo putUserInfo(UserInfo userInfo, boolean update);
+  public abstract List<Pokemon> getPokemonsAnimation();
 
-  void resetPool(boolean force);
 
-  void disconnect();
+  public void removeIfNecessary(ServerPlayerEntity player) {
+    DatabaseClientFactory.userInfoMap.remove(player.getUuid());
+  }
 
-  void save();
+  public abstract List<Pokemon> getAllPokemons();
 }

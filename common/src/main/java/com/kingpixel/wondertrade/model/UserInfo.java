@@ -1,13 +1,13 @@
 package com.kingpixel.wondertrade.model;
 
+import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.server.network.ServerPlayerEntity;
-import org.bson.Document;
 
-import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -16,75 +16,30 @@ import java.util.concurrent.TimeUnit;
  */
 @Getter
 @Setter
+@Data
 @ToString
 public class UserInfo {
   private UUID playeruuid;
   private boolean messagesend;
   private long date;
 
-  public UserInfo() {
-
-  }
-
-  public UserInfo(UUID playeruuid) {
-    this.playeruuid = playeruuid;
+  public UserInfo(ServerPlayerEntity player) {
+    this.playeruuid = player.getUuid();
     this.messagesend = false;
-    this.date = new Date(1).getTime();
+    this.date = 0;
   }
 
-
-  public UserInfo(UUID uuid, Date futureDate) {
-    this.playeruuid = uuid;
-    this.messagesend = false;
-    this.date = futureDate.getTime();
+  public void setCooldown(ServerPlayerEntity player) {
+    this.date = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(
+      PlayerUtils.getCooldown(
+        CobbleWonderTrade.config.getCooldownPermission(),
+        CobbleWonderTrade.config.getCooldown(),
+        player
+      )
+    );
   }
 
-  public UserInfo(UUID playeruuid, boolean messagesend, Date date) {
-    this.playeruuid = playeruuid;
-    this.messagesend = messagesend;
-    this.date = date.getTime();
-  }
-
-  public static Date getDateWithCooldown(ServerPlayerEntity player) {
-    long currentTimeMillis = System.currentTimeMillis();
-    long cooldownMillis = TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldown(player));
-    return new Date(currentTimeMillis + cooldownMillis);
-  }
-
-
-  public static UserInfo fromDocument(Document document) {
-    UserInfo userInfo = new UserInfo();
-
-    if (document.containsKey("playeruuid")) {
-      userInfo.setPlayeruuid(UUID.fromString(document.getString("playeruuid")));
-    } else {
-      throw new IllegalArgumentException("Document does not contain playeruuid field");
-    }
-
-    if (document.containsKey("messagesend")) {
-      userInfo.setMessagesend(document.getBoolean("messagesend"));
-    } else {
-      throw new IllegalArgumentException("Document does not contain messagesend field");
-    }
-
-    if (document.containsKey("date")) {
-      try {
-        userInfo.setDate(document.getLong("date"));
-      } catch (ClassCastException ignored) {
-        userInfo.setDate(document.getDate("date").getTime());
-      }
-    } else {
-      throw new IllegalArgumentException("Document does not contain date field");
-    }
-
-    return userInfo;
-  }
-
-  public Document toDocument() {
-    Document document = new Document();
-    document.put("playeruuid", this.getPlayeruuid().toString());
-    document.put("messagesend", this.isMessagesend());
-    document.put("date", this.getDate());
-    return document;
+  public boolean hasCooldown() {
+    return System.currentTimeMillis() < date;
   }
 }

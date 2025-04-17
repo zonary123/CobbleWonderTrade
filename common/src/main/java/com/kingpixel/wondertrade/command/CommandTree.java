@@ -1,29 +1,33 @@
 package com.kingpixel.wondertrade.command;
 
 import ca.landonjw.gooeylibs2.api.UIManager;
+import ca.landonjw.gooeylibs2.api.button.GooeyButton;
+import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.api.pokemon.labels.CobblemonPokemonLabels;
 import com.cobblemon.mod.common.pokemon.Pokemon;
-import com.kingpixel.cobbleutils.util.AdventureTranslator;
+import com.kingpixel.cobbleutils.CobbleUtils;
+import com.kingpixel.cobbleutils.Model.ItemModel;
+import com.kingpixel.cobbleutils.api.PermissionApi;
+import com.kingpixel.cobbleutils.ui.PartyPcMenu;
+import com.kingpixel.cobbleutils.util.*;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.Manager.WonderTradePermission;
-import com.kingpixel.wondertrade.command.base.CommandWonderTrade;
-import com.kingpixel.wondertrade.command.base.CommandWonderTradeOther;
-import com.kingpixel.wondertrade.command.base.CommandWonderTradePool;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
-import com.kingpixel.wondertrade.gui.WonderTradeConfirm;
-import com.kingpixel.wondertrade.gui.WonderTradePC;
 import com.kingpixel.wondertrade.model.UserInfo;
-import com.kingpixel.wondertrade.utils.WonderTradeUtil;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import lombok.Data;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Carlos Varas Alonso - 25/05/2024 19:35
@@ -33,166 +37,304 @@ public class CommandTree {
   public static void register(
     CommandDispatcher<ServerCommandSource> dispatcher
   ) {
-    for (String s : CobbleWonderTrade.config.getAliases()) {
-      LiteralArgumentBuilder<ServerCommandSource> base = CommandManager.literal(s)
-        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION));
-      // /wt
-      dispatcher.register(
-        base.executes(new CommandWonderTrade())
-      );
-
-      // /wt other <player>
+    for (String command : CobbleWonderTrade.config.getCommands()) {
+      var base = CommandManager.literal(command);
       dispatcher.register(
         base
-          .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_OTHER_PERMISSION))
-          .then(CommandManager.literal("other")
-            .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_OTHER_PERMISSION))
-            .then(
-              CommandManager.argument("player", EntityArgumentType.player())
-                .executes(new CommandWonderTradeOther())
-            ))
-      );
-
-      // /wt reload
-      dispatcher.register(base
-        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
-        .then(CommandManager.literal("reload")
-          .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
+          .requires(source -> PermissionApi.hasPermission(source, List.of(CobbleWonderTrade.MOD_ID + ".user",
+            CobbleWonderTrade.MOD_ID + ".admin"), 2))
           .executes(context -> {
-            CobbleWonderTrade.load();
-            if (context.getSource().isExecutedByPlayer()) {
-              Objects.requireNonNull(context.getSource().getPlayer()).sendMessage(AdventureTranslator.toNative(CobbleWonderTrade.language.getReload().replace("%prefix%", CobbleWonderTrade.language.getPrefix())));
-            } else {
-              CobbleWonderTrade.LOGGER.info(CobbleWonderTrade.language.getReload().replace("%prefix%",
-                CobbleWonderTrade.language.getPrefix()));
-            }
-            return 1;
-          })));
-
-      // /wt pool
-      if (CobbleWonderTrade.config.isPoolview()) {
-        dispatcher.register(base
-          .then(CommandManager.literal("pool")
-            .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
-            .executes(new CommandWonderTradePool())));
-      }
-
-      // /wt resetcooldown
-      dispatcher.register(base
-        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
-        .then(CommandManager.literal("resetcooldown")
-          .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
-          .executes(context -> {
-            if (!context.getSource().isExecutedByPlayer()) {
-              context.getSource().getServer().sendMessage(WonderTradeUtil.toNative("You must be a player to use " +
-                "this command"));
-              return 0;
-            }
-
             ServerPlayerEntity player = context.getSource().getPlayer();
-            if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-              player.sendMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
-              return 0;
-            }
-            DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUuid()), true);
+            open(player);
             return 1;
-          })
-          .then(CommandManager.argument("player", EntityArgumentType.player())
-            .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_RELOAD_PERMISSION))
-            .executes(context -> {
-              ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
-              if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-                player.sendMessage(WonderTradeUtil.toNative("&cYou can't use this command while in battle!"));
-                return 0;
-              }
-              DatabaseClientFactory.databaseClient.putUserInfo(new UserInfo(player.getUuid()), true);
-              return 1;
-            })
-          )
-        )
-      );
-
-      // /wt pc
-      dispatcher.register(base.then(CommandManager.literal("pc")
-        .requires(source -> WonderTradePermission.checkPermission(source, CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
-        .executes(context -> {
-          ServerPlayerEntity player = context.getSource().getPlayer();
-          if (player == null) return 0;
-          if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-            player.sendMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
-            return 0;
-          }
-          try {
-            UIManager.openUIForcefully(player, Objects.requireNonNull(WonderTradePC.open(player)));
-          } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-          }
-          return 1;
-        })));
-
-      // /wt <slot>
-      dispatcher.register(
-        base.then(
-          CommandManager.literal("slot")
-            .requires(source -> WonderTradePermission.checkPermission(source,
-              CobbleWonderTrade.permissions.WONDERTRADE_BASE_PERMISSION))
-            .then(
-              CommandManager.argument("slot", IntegerArgumentType.integer(1, 6))
-                .suggests(
-                  (context, builder) -> {
-                    for (int i = 1; i <= 6; i++) {
-                      builder.suggest(String.valueOf(i));
-                    }
-                    return builder.buildFuture();
-                  }
-                )
-                .then(
-                  CommandManager.literal("confirm")
-                    .executes(
-                      context -> {
-                        if (!context.getSource().isExecutedByPlayer()) {
-                          context.getSource().getServer().sendMessage(AdventureTranslator.toNative("You must be a player to " +
-                            "use this command"));
-                          return 0;
-                        }
-                        ServerPlayerEntity player = context.getSource().getPlayer();
-                        if (player == null) return 0;
-                        if (Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player) != null) {
-                          player.sendMessage(AdventureTranslator.toNative("&cYou can't use this command while in battle!"));
-                          return 0;
-                        }
-                        Integer slot = IntegerArgumentType.getInteger(context, "slot");
-                        slot--;
-                        if (slot < 0 || slot > 5) return 0;
-                        try {
-                          Pokemon pokemon = Cobblemon.INSTANCE.getStorage().getParty(player).get(slot);
-                          if (pokemon != null)
-                            WonderTradeConfirm.trade(player, pokemon);
-                        } catch (Exception e) {
-                          e.printStackTrace();
-                        }
-                        return 1;
-                      }
-                    )
-                )
-            )
-        )
-      );
-
-      // /wt reset
-      dispatcher.register(
-        base
-          .requires(source -> source.hasPermissionLevel(2))
-          .then(
-            CommandManager.literal("reset")
-              .requires(source -> source.hasPermissionLevel(2))
+          }).then(
+            CommandManager.literal("reload")
+              .requires(source -> PermissionApi.hasPermission(source, List.of(CobbleWonderTrade.MOD_ID + ".admin",
+                  CobbleWonderTrade.MOD_ID + ".reload"),
+                2))
               .executes(context -> {
-                DatabaseClientFactory.databaseClient.resetPool(true);
+                CobbleWonderTrade.load();
                 return 1;
               })
+          ).then(
+            CommandManager.literal("other")
+              .requires(source -> PermissionApi.hasPermission(source, List.of(CobbleWonderTrade.MOD_ID + ".admin",
+                  CobbleWonderTrade.MOD_ID + ".other"),
+                2))
+              .then(
+                CommandManager.argument("player", EntityArgumentType.players())
+                  .executes(context -> {
+                    var players = EntityArgumentType.getPlayers(context, "player");
+                    for (ServerPlayerEntity player : players) open(player);
+                    return 1;
+                  })
+              )
+          ).then(
+            CommandManager.literal("restartPool")
+              .requires(source -> PermissionApi.hasPermission(source, List.of(CobbleWonderTrade.MOD_ID + ".admin",
+                  CobbleWonderTrade.MOD_ID + ".restart.pool"),
+                2))
+              .executes(context -> {
+                CompletableFuture.runAsync(() -> {
+                    DatabaseClientFactory.databaseClient.restartPool();
+                  })
+                  .orTimeout(5, TimeUnit.SECONDS)
+                  .exceptionally(e -> {
+                    e.printStackTrace();
+                    return null;
+                  });
+                return 1;
+              })
+          ).then(
+            CommandManager.literal("restartUser")
+              .requires(source -> PermissionApi.hasPermission(source, List.of(CobbleWonderTrade.MOD_ID + ".admin",
+                  CobbleWonderTrade.MOD_ID + ".restart.user"),
+                2))
+              .then(
+                CommandManager.argument("players", EntityArgumentType.players())
+                  .executes(context -> {
+                    CompletableFuture.runAsync(() -> {
+                        Collection<ServerPlayerEntity> players = null;
+                        try {
+                          players = EntityArgumentType.getPlayers(context, "players");
+                        } catch (CommandSyntaxException e) {
+                          e.printStackTrace();
+                        }
+                        for (ServerPlayerEntity player : players) {
+                          var userinfo = new UserInfo(player);
+                          DatabaseClientFactory.userInfoMap.put(player.getUuid(), userinfo);
+                          DatabaseClientFactory.databaseClient.updateUserInfo(player, userinfo);
+                        }
+                      })
+                      .orTimeout(5, TimeUnit.SECONDS)
+                      .exceptionally(e -> {
+                        e.printStackTrace();
+                        return null;
+                      });
+                    return 1;
+                  })
+              )
           )
       );
+    }
+  }
 
+  public static void open(ServerPlayerEntity player) {
+    if (player == null) return;
+
+    var build = PartyPcMenu.builder()
+      .setPlayer(player)
+      .setTemplateConsumer(template -> {
+        if (CobbleWonderTrade.config.isIsrandom()) return;
+        long currentTime = System.currentTimeMillis();
+        ItemModel itemModelInfo = CobbleWonderTrade.language.getInfo();
+        if (UIUtils.isInside(itemModelInfo, CobbleWonderTrade.language.getPartyPcMenu().getRowsParty()) && CobbleWonderTrade.config.isPoolview()) {
+          var pokemons = DatabaseClientFactory.databaseClient.getAllPokemons();
+          var userinfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
+
+          // Contar estadísticas de Pokémon
+          var stats = calculatePokemonStats(pokemons);
+
+          // Preparar lore con reemplazos
+          List<String> lore = prepareLore(CobbleWonderTrade.language.getInfo().getLore(), stats, userinfo);
+
+          // Crear botón
+          GooeyButton button = itemModelInfo.getButton(1, itemModelInfo.getDisplayname(), lore,
+            action -> {
+              List<Pokemon> list;
+              switch (action.getClickType()) {
+                case RIGHT_CLICK, SHIFT_RIGHT_CLICK -> list = stats.getSpecial();
+                default -> list = stats.getPokemons();
+              }
+              CobbleWonderTrade.language.getPool().open(player, list);
+            });
+          itemModelInfo.applyTemplate((ChestTemplate) template, button);
+        }
+        long time = System.currentTimeMillis() - currentTime;
+        if (CobbleWonderTrade.config.isDebug())
+          CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, " Info Time: " + time + "ms");
+      })
+      .setPokemonAction(action -> handlePokemonAction(player, action.getPokemon()))
+      .setPartyPcMenu(CobbleWonderTrade.language.getPartyPcMenu())
+      .setConfirmMenu(CobbleWonderTrade.language.getConfirmMenu())
+      .setCloseAction(close -> {
+        open(player);
+      })
+      .setBlackList(CobbleWonderTrade.config.getBlackList())
+      .build();
+
+    build.getPartyPcMenu().openParty(build);
+  }
+
+  public static PokemonStats calculatePokemonStats(List<Pokemon> pokemons) {
+    int shinys = 0, legendaries = 0, ultraBeasts = 0, paradoxes = 0, ivs31 = 0;
+    List<Pokemon> special = new ArrayList<>();
+
+    for (Pokemon pokemon : pokemons) {
+      boolean isSpecial = false;
+      if (pokemon.getShiny()) {
+        shinys++;
+        isSpecial = true;
+      }
+      if (pokemon.isLegendary()) {
+        legendaries++;
+        isSpecial = true;
+      }
+      if (pokemon.isUltraBeast()) {
+        ultraBeasts++;
+        isSpecial = true;
+      }
+      if (pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX)) {
+        paradoxes++;
+        isSpecial = true;
+      }
+      if (PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31) {
+        ivs31++;
+        isSpecial = true;
+      }
+      if (isSpecial) {
+        special.add(pokemon);
+      }
+    }
+
+    return new PokemonStats(shinys, legendaries, ultraBeasts, paradoxes, ivs31, special, pokemons);
+  }
+
+  public static List<String> prepareLore(List<String> loreTemplate, PokemonStats stats, UserInfo userinfo) {
+    String cooldown;
+    if (userinfo != null) {
+      cooldown = PlayerUtils.getCooldown(new Date(userinfo.getDate()));
+    } else {
+      cooldown = "";
+    }
+    return loreTemplate.stream()
+      .map(s ->
+        prepareLore(s, stats)
+          .replace("%cooldown%", cooldown)
+          .replace("%time%", cooldown))
+      .toList();
+  }
+
+  public static String prepareLore(String s, PokemonStats stats) {
+    return s
+      .replace("%shinys%", String.valueOf(stats.shinys))
+      .replace("%legends%", String.valueOf(stats.legendaries))
+      .replace("%ultrabeast%", String.valueOf(stats.ultraBeasts))
+      .replace("%paradox%", String.valueOf(stats.paradoxes))
+      .replace("%ivs%", String.valueOf(stats.ivs31));
+  }
+
+  private static void handlePokemonAction(ServerPlayerEntity player, Pokemon pokemon) {
+    CompletableFuture.runAsync(() -> {
+        long currentTime = System.currentTimeMillis();
+        UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
+
+        if (userInfo.hasCooldown()) {
+          sendCooldownMessage(player, userInfo);
+          UIManager.closeUI(player);
+          return;
+        }
+
+        if (pokemon.getLevel() <= CobbleWonderTrade.config.getMinlvreq()) {
+          sendMinLevelMessage(player, pokemon);
+          return;
+        }
+
+        UIManager.closeUI(player);
+        userInfo.setCooldown(player);
+        DatabaseClientFactory.databaseClient.updateUserInfo(player, userInfo);
+        Pokemon pokemonObtained;
+        if (!CobbleWonderTrade.config.isIsrandom()) {
+          pokemonObtained = DatabaseClientFactory.databaseClient.tradePokemon(player, pokemon);
+        } else {
+          pokemonObtained = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemon(
+            CobbleWonderTrade.MOD_ID,
+            "pool");
+
+          int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
+          int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
+          if (legendary == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
+            pokemonObtained = DatabaseClientFactory.getLegendary();
+          }
+          if (shiny == 0) {
+            pokemonObtained.setShiny(true);
+          }
+          if (CobbleWonderTrade.config.isDebug()) {
+            CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Legendary: " + legendary);
+            CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Shiny: " + shiny);
+          }
+          DatabaseClientFactory.setLevel(pokemonObtained);
+        }
+        updatePlayerStorage(player, pokemon, pokemonObtained);
+        long time = System.currentTimeMillis() - currentTime;
+        if (CobbleWonderTrade.config.isDebug()) CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Time: " + time + "ms");
+      })
+      .orTimeout(5, TimeUnit.SECONDS)
+      .exceptionally(e -> {
+        e.printStackTrace();
+        return null;
+      });
+  }
+
+  private static void sendCooldownMessage(ServerPlayerEntity player, UserInfo userInfo) {
+    String cooldown = PlayerUtils.getCooldown(new Date(userInfo.getDate()));
+    PlayerUtils.sendMessage(
+      player,
+      CobbleWonderTrade.language.getMessagewondertradecooldown()
+        .replace("%cooldown%", cooldown)
+        .replace("%time%", cooldown),
+      CobbleWonderTrade.language.getPrefix(),
+      TypeMessage.CHAT
+    );
+  }
+
+  private static void sendMinLevelMessage(ServerPlayerEntity player, Pokemon pokemon) {
+    PlayerUtils.sendMessage(
+      player,
+      PokemonUtils.replace(CobbleWonderTrade.language.getMessageThePokemonNotHaveMinLevel(), pokemon)
+        .replace("%minlevel%", String.valueOf(CobbleWonderTrade.config.getMinlvreq())),
+      CobbleWonderTrade.language.getPrefix(),
+      TypeMessage.CHAT
+    );
+  }
+
+  private static void updatePlayerStorage(ServerPlayerEntity player, Pokemon oldPokemon, Pokemon newPokemon) {
+    PlayerUtils.sendMessage(
+      player,
+      PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
+        .replace("%player%", player.getGameProfile().getName()), oldPokemon),
+      CobbleWonderTrade.language.getPrefix(),
+      TypeMessage.BROADCAST
+    );
+    PlayerUtils.sendMessage(
+      player,
+      PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(), newPokemon),
+      CobbleWonderTrade.language.getPrefix(),
+      TypeMessage.CHAT
+    );
+    var party = Cobblemon.INSTANCE.getStorage().getParty(player);
+    var pc = Cobblemon.INSTANCE.getStorage().getPC(player);
+
+    if (!party.remove(oldPokemon)) pc.remove(oldPokemon);
+    party.add(newPokemon);
+  }
+
+  // Clase auxiliar para estadísticas de Pokémon
+  @Data
+  public static class PokemonStats {
+    int shinys, legendaries, ultraBeasts, paradoxes, ivs31;
+    private List<Pokemon> special;
+    private List<Pokemon> pokemons;
+
+    public PokemonStats(int shinys, int legendaries, int ultraBeasts, int paradoxes, int ivs31, List<Pokemon> special
+      , List<Pokemon> pokemons) {
+      this.shinys = shinys;
+      this.legendaries = legendaries;
+      this.ultraBeasts = ultraBeasts;
+      this.paradoxes = paradoxes;
+      this.ivs31 = ivs31;
+      this.special = special;
+      this.pokemons = pokemons;
     }
   }
 }

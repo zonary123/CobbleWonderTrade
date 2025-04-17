@@ -1,0 +1,149 @@
+package com.kingpixel.wondertrade.database;
+
+import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.kingpixel.cobbleutils.CobbleUtils;
+import com.kingpixel.cobbleutils.Model.DataBaseConfig;
+import com.kingpixel.cobbleutils.bson.Document;
+import com.kingpixel.cobbleutils.mongodb.client.MongoClient;
+import com.kingpixel.cobbleutils.mongodb.client.MongoClients;
+import com.kingpixel.cobbleutils.mongodb.client.MongoCollection;
+import com.kingpixel.cobbleutils.mongodb.client.MongoDatabase;
+import com.kingpixel.cobbleutils.mongodb.client.model.ReplaceOptions;
+import com.kingpixel.cobbleutils.util.Utils;
+import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.model.UserInfo;
+import net.minecraft.server.network.ServerPlayerEntity;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+public class MongoDBDatabaseClient extends DatabaseClient {
+  private MongoClient mongoClient;
+  private MongoDatabase database;
+  private MongoCollection<Document> pokemonsCollection;
+  private MongoCollection<Document> userInfoCollection;
+
+  public MongoDBDatabaseClient(DataBaseConfig config) {
+    String connectionString = config.getUrl();
+    this.mongoClient = MongoClients.create(connectionString);
+    this.database = mongoClient.getDatabase(config.getDatabase());
+    this.pokemonsCollection = database.getCollection("pokemons");
+    this.userInfoCollection = database.getCollection("user_info");
+  }
+
+  @Override
+  public void connect() {
+    CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Connecting to MongoDB Database");
+    fixPool();
+  }
+
+  @Override
+  public void disconnect() {
+    CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Disconnecting from MongoDB Database");
+    mongoClient.close();
+  }
+
+  @Override
+  public UserInfo getUserInfo(ServerPlayerEntity player) {
+    var userInfo = DatabaseClientFactory.userInfoMap.get(player.getUuid());
+    if (userInfo != null) return userInfo;
+
+    CompletableFuture.runAsync(() -> {
+      var userInfoDocument = userInfoCollection.find(new Document("playeruuid", player.getUuid().toString())).first();
+      if (userInfoDocument != null) {
+        UserInfo readUserInfo = Utils.newWithoutSpacingGson().fromJson(userInfoDocument.toJson(), UserInfo.class);
+        DatabaseClientFactory.userInfoMap.put(player.getUuid(), readUserInfo);
+      } else {
+        UserInfo newUserInfo = new UserInfo(player);
+        DatabaseClientFactory.userInfoMap.put(player.getUuid(), newUserInfo);
+        updateUserInfo(player, newUserInfo);
+      }
+    }).orTimeout(5, TimeUnit.SECONDS).exceptionally(e -> {
+      e.printStackTrace();
+      return null;
+    });
+
+    return null;
+  }
+
+  @Override
+  public Pokemon tradePokemon(ServerPlayerEntity player, Pokemon pokemon) {
+    var randomPokemonDocument = pokemonsCollection.aggregate(List.of(new Document("$sample", new Document("size", 1)))).first();
+    if (randomPokemonDocument == null) {
+      CobbleUtils.LOGGER.warn(CobbleWonderTrade.MOD_ID, "No Pokémon available in the pool");
+      return null;
+    }
+
+    Pokemon tradedPokemon = Utils.newWithoutSpacingGson().fromJson(randomPokemonDocument.toJson(), Pokemon.class);
+    pokemonsCollection.deleteOne(randomPokemonDocument);
+    pokemonsCollection.insertOne(Document.parse(Utils.newWithoutSpacingGson().toJson(pokemon)));
+    return tradedPokemon;
+  }
+
+  @Override
+  public List<Pokemon> getPokemonsAnimation() {
+    var pokemonDocuments = pokemonsCollection.aggregate(List.of(new Document("$sample", new Document("size", 5)))).into(new ArrayList<>());
+    List<Pokemon> pokemons = new ArrayList<>();
+    for (var doc : pokemonDocuments) {
+      pokemons.add(Utils.newWithoutSpacingGson().fromJson(doc.toJson(), Pokemon.class));
+    }
+    return pokemons;
+  }
+
+  @Override
+  public List<Pokemon> getAllPokemons() {
+    var pokemonDocuments = pokemonsCollection.find().into(new ArrayList<>());
+    List<Pokemon> pokemons = new ArrayList<>();
+    for (var doc : pokemonDocuments) {
+      pokemons.add(Utils.newWithoutSpacingGson().fromJson(doc.toJson(), Pokemon.class));
+    }
+    return pokemons;
+  }
+
+  @Override
+  public void restartPool() {
+    CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Restarting pool in MongoDB");
+    pokemonsCollection.deleteMany(new Document());
+    List<Pokemon> newPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
+      CobbleWonderTrade.MOD_ID,
+      "pool",
+      CobbleWonderTrade.config.getSizePool()
+    );
+    DatabaseClientFactory.putLevels(newPokemons);
+    List<Document> pokemonDocuments = newPokemons.stream()
+      .map(pokemon -> Document.parse(Utils.newWithoutSpacingGson().toJson(pokemon)))
+      .toList();
+    pokemonsCollection.insertMany(pokemonDocuments);
+  }
+
+  @Override
+  public void updateUserInfo(ServerPlayerEntity player, UserInfo userinfo) {
+    var userInfoDocument = Document.parse(Utils.newWithoutSpacingGson().toJson(userinfo));
+    userInfoCollection.replaceOne(
+      new Document("playeruuid", player.getUuid().toString()),
+      userInfoDocument,
+      new ReplaceOptions().upsert(true)
+    );
+  }
+
+  @Override
+  public void fixPool() {
+    long currentCount = pokemonsCollection.countDocuments();
+    int sizePool = CobbleWonderTrade.config.getSizePool();
+    if (currentCount < sizePool) {
+      List<Pokemon> newPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
+        CobbleWonderTrade.MOD_ID,
+        "pool",
+        sizePool - (int) currentCount
+      );
+      DatabaseClientFactory.putLevels(newPokemons);
+      List<Document> pokemonDocuments = newPokemons.stream()
+        .map(pokemon -> Document.parse(Utils.newWithoutSpacingGson().toJson(pokemon)))
+        .toList();
+      pokemonsCollection.insertMany(pokemonDocuments);
+    }
+    CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Size pool: " + sizePool + ", current count: " + currentCount);
+  }
+}

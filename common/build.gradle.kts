@@ -16,11 +16,11 @@ dependencies {
     modImplementation("dev.architectury:architectury:${property("architectury_version")}")
     modImplementation("ca.landonjw.gooeylibs:fabric-api-repack:${property("gooeylibs_version")}")
 
-    modImplementation(files("libs/CobbleUtils-common-1.1.3.jar"))
+    modImplementation(files("libs/CobbleUtils-1.6.1-1.21.1-fabric-1.1.3-1b10ff7.jar"))
 
     // Database
     api("org.mongodb:mongodb-driver-sync:${property("mongodb_version")}")
-    
+
     // Kyori Adventure
     api("net.kyori:adventure-text-serializer-gson:${property("kyori_version")}")
     api("net.kyori:adventure-text-minimessage:${property("kyori_version")}")
