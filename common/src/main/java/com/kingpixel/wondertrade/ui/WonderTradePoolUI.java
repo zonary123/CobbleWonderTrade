@@ -57,23 +57,23 @@ public class WonderTradePoolUI {
 
   public void open(ServerPlayerEntity player, List<Pokemon> pokemons) {
     if (player == null || pokemons == null || pokemons.isEmpty()) return;
-    long currentTime = System.currentTimeMillis();
-    if (cooldowns.containsKey(player.getUuid())) {
-      long lastTime = cooldowns.get(player.getUuid());
-      if (currentTime - lastTime < COOLDOWN_MS) {
-        player.sendMessage(AdventureTranslator.toNative("You are clicking too fast!"));
-        return;
-      }
-    } else {
-      cooldowns.put(player.getUuid(), currentTime);
-    }
     CompletableFuture.runAsync(() -> {
+        long currentTime = System.currentTimeMillis();
+        if (cooldowns.containsKey(player.getUuid())) {
+          long lastTime = cooldowns.get(player.getUuid());
+          if (currentTime - lastTime < COOLDOWN_MS) {
+            player.sendMessage(AdventureTranslator.toNative("You are clicking too fast!"));
+            return;
+          }
+        } else {
+          cooldowns.put(player.getUuid(), currentTime);
+        }
         var template = ChestTemplate
           .builder(rows)
           .build();
 
-        rectangle.apply(template);
         PanelsConfig.applyConfig(template, panels);
+        rectangle.apply(template);
 
         List<Button> buttons = new ArrayList<>();
 
@@ -98,7 +98,7 @@ public class WonderTradePoolUI {
           .linkType(LinkType.Next)
           .build());
         close.applyTemplate(template, close.getButton(action -> CommandTree.open(action.getPlayer())));
-        
+
         var builder = LinkedPage.builder()
           .title(AdventureTranslator.toNative(title));
 

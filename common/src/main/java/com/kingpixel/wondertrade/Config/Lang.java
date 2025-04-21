@@ -3,6 +3,7 @@ package com.kingpixel.wondertrade.Config;
 import com.google.gson.Gson;
 import com.kingpixel.cobbleutils.CobbleUtils;
 import com.kingpixel.cobbleutils.Model.ItemModel;
+import com.kingpixel.cobbleutils.Model.discord.WebHookStruct;
 import com.kingpixel.cobbleutils.ui.ConfirmMenu;
 import com.kingpixel.cobbleutils.ui.PartyPcMenu;
 import com.kingpixel.cobbleutils.util.Utils;
@@ -28,8 +29,10 @@ public class Lang {
   private String messagePokemonToWondertrade;
   private String messageThePokemonNotHaveMinLevel;
   private ItemModel info;
-  private String title_webhook;
-  private List<String> message_WebHook;
+  private WebHookStruct webHookPutPool;
+  private WebHookStruct webHookObtainedPool;
+  private WebHookStruct webHookSpecialPutPool;
+  private WebHookStruct webHookSpecialObtainedPool;
   private PartyPcMenu partyPcMenu;
   private ConfirmMenu confirmMenu;
   private WonderTradePoolUI pool;
@@ -60,22 +63,51 @@ public class Lang {
     ));
     info.setSlot(4);
     messagewondertradecooldown = "%prefix% <#d65549>You must wait before trading again %time%!";
-    title_webhook = "WonderTrade";
-    message_WebHook = List.of(
-      "%pokemon% %gender% %form% %shiny% %player%",
-      "Shinys: %shiny%",
-      " - Ivs: %ivshp% / %ivsatk% / %ivsdef% / %ivsspa% / %ivsspdef% / %ivsspeed%",
-      " - Evs: %evshp% / %evsatk% / %evsdef% / %evsspa% / %evsspdef% / %evsspeed%",
-      "Ability: %ability%",
-      "Nature: %nature%",
-      "Owner: %owner%",
-      "Country: %country%",
-      "Ball: %ball%",
-      "Size: %size%",
-      "Moves: %move1% - %move2% - %move3% - %move4%",
-      "Tradeable: %tradeable%",
-      "Breedable: %breedable%"
-    );
+    StringBuilder defaultStruct = new StringBuilder();
+    defaultStruct.append(" - Level: %level%\n");
+    defaultStruct.append(" - Gender: %gender%\n");
+    defaultStruct.append(" - Form: %form%\n");
+    defaultStruct.append(" - Shiny: %shiny%\n");
+    defaultStruct.append(" - Nature: %nature%\n");
+    defaultStruct.append(" - Ability: %ability% %ah%\n");
+    defaultStruct.append(" - Friendship: %friendship%\n");
+    defaultStruct.append(" - Breedable: %breedable%\n");
+    defaultStruct.append(" - IVs:\n");
+    defaultStruct.append("   HP: %ivshp% - Atk: %ivsatk% - Def: %ivsdef%\n");
+    defaultStruct.append("   SpA: %ivsspa% - SpD: %ivsspdef% - Spe: %ivsspeed%\n");
+    defaultStruct.append(" - Item: %item%\n");
+    defaultStruct.append(" - Ball: %ball%\n");
+    defaultStruct.append(" - Moves: %move1% | %move2% | %move3% | %move4%\n");
+    defaultStruct.append(" - Owner: %owner%\n");
+    webHookPutPool = new WebHookStruct();
+    var embed = webHookPutPool.getEmbeds().getFirst();
+    embed.setColor("f3ac67");
+    embed.setTitle("WonderTrade Pool | Put");
+    StringBuilder descriptionPut = new StringBuilder();
+    descriptionPut.append("Pokemon put by %player%\n");
+    embed.setDescription(descriptionPut.append(defaultStruct).toString());
+    webHookObtainedPool = new WebHookStruct();
+    embed = webHookObtainedPool.getEmbeds().getFirst();
+    embed.setColor("5abad9");
+    embed.setTitle("WonderTrade Pool | Obtained");
+    StringBuilder descriptionObtained = new StringBuilder();
+    descriptionObtained.append("Pokemon obtained by %player%\n");
+    embed.setDescription(descriptionObtained.append(defaultStruct).toString());
+    webHookSpecialPutPool = new WebHookStruct();
+    embed = webHookSpecialPutPool.getEmbeds().getFirst();
+    embed.setColor("c3b0f6");
+    embed.setTitle("WonderTrade Pool | Special Put");
+    StringBuilder descriptionSpecialPut = new StringBuilder();
+    descriptionSpecialPut.append("Special Pokemon put by %player%\n");
+    embed.setDescription(descriptionSpecialPut.append(defaultStruct).toString());
+    webHookSpecialObtainedPool = new WebHookStruct();
+    embed = webHookSpecialObtainedPool.getEmbeds().getFirst();
+    embed.setColor("c3b0f6");
+    embed.setTitle("WonderTrade Pool | Special Obtained");
+    StringBuilder descriptionSpecialObtained = new StringBuilder();
+    descriptionSpecialObtained.append("Special Pokemon obtained by %player%\n");
+    embed.setDescription(descriptionSpecialObtained.append(defaultStruct).toString());
+
     partyPcMenu = new PartyPcMenu();
     confirmMenu = new ConfirmMenu();
     pool = new WonderTradePoolUI();

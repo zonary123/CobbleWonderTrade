@@ -84,7 +84,7 @@ public class MongoDBDatabaseClient extends DatabaseClient {
 
   @Override
   public List<Pokemon> getPokemonsAnimation() {
-    var pokemonDocuments = pokemonsCollection.aggregate(List.of(new Document("$sample", new Document("size", 5)))).into(new ArrayList<>());
+    var pokemonDocuments = pokemonsCollection.aggregate(List.of(new Document("$sample", new Document("size", DatabaseClientFactory.POKEMON_ANIMATION_SIZE)))).into(new ArrayList<>());
     List<Pokemon> pokemons = new ArrayList<>();
     for (var doc : pokemonDocuments) {
       pokemons.add(Utils.newWithoutSpacingGson().fromJson(doc.toJson(), Pokemon.class));
@@ -106,12 +106,7 @@ public class MongoDBDatabaseClient extends DatabaseClient {
   public void restartPool() {
     CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Restarting pool in MongoDB");
     pokemonsCollection.deleteMany(new Document());
-    List<Pokemon> newPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
-      CobbleWonderTrade.MOD_ID,
-      "pool",
-      CobbleWonderTrade.config.getSizePool()
-    );
-    DatabaseClientFactory.putLevels(newPokemons);
+    List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
     List<Document> pokemonDocuments = newPokemons.stream()
       .map(pokemon -> Document.parse(Utils.newWithoutSpacingGson().toJson(pokemon)))
       .toList();
@@ -133,16 +128,25 @@ public class MongoDBDatabaseClient extends DatabaseClient {
     long currentCount = pokemonsCollection.countDocuments();
     int sizePool = CobbleWonderTrade.config.getSizePool();
     if (currentCount < sizePool) {
-      List<Pokemon> newPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
-        CobbleWonderTrade.MOD_ID,
-        "pool",
-        sizePool - (int) currentCount
-      );
-      DatabaseClientFactory.putLevels(newPokemons);
+      List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(sizePool, (int) currentCount);
       List<Document> pokemonDocuments = newPokemons.stream()
         .map(pokemon -> Document.parse(Utils.newWithoutSpacingGson().toJson(pokemon)))
         .toList();
       pokemonsCollection.insertMany(pokemonDocuments);
+    } else {
+      long excessCount = currentCount - sizePool;
+      if (excessCount > 0) {
+        var randomPokemonIds = pokemonsCollection.aggregate(List.of(
+          new Document("$sample", new Document("size", excessCount)),
+          new Document("$project", new Document("_id", 1))
+        )).into(new ArrayList<>());
+
+        List<Object> idsToDelete = randomPokemonIds.stream()
+          .map(doc -> doc.get("_id"))
+          .toList();
+
+        pokemonsCollection.deleteMany(new Document("_id", new Document("$in", idsToDelete)));
+      }
     }
     CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Size pool: " + sizePool + ", current count: " + currentCount);
   }

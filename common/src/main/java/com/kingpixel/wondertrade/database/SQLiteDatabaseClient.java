@@ -112,7 +112,7 @@ public class SQLiteDatabaseClient extends DatabaseClient {
 
   @Override
   public List<Pokemon> getPokemonsAnimation() {
-    return getPokemons("SELECT data FROM pokemons ORDER BY RANDOM() LIMIT 5");
+    return getPokemons("SELECT data FROM pokemons ORDER BY RANDOM() LIMIT " + DatabaseClientFactory.POKEMON_ANIMATION_SIZE);
   }
 
   @Override
@@ -143,13 +143,7 @@ public class SQLiteDatabaseClient extends DatabaseClient {
       e.printStackTrace();
     }
 
-    List<Pokemon> newPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
-      CobbleWonderTrade.MOD_ID,
-      "pool",
-      CobbleWonderTrade.config.getSizePool()
-    );
-    DatabaseClientFactory.putLevels(newPokemons);
-
+    List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
     try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO pokemons (data) VALUES (?)")) {
       for (Pokemon pokemon : newPokemons) {
         insertStatement.setString(1, Utils.newWithoutSpacingGson().toJson(pokemon));
@@ -183,11 +177,7 @@ public class SQLiteDatabaseClient extends DatabaseClient {
         int sizePool = CobbleWonderTrade.config.getSizePool();
 
         if (currentCount < sizePool) {
-          List<Pokemon> newPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
-            CobbleWonderTrade.MOD_ID,
-            "pool",
-            sizePool - currentCount
-          );
+          List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(sizePool, currentCount);
           DatabaseClientFactory.putLevels(newPokemons);
 
           StringBuilder queryBuilder = new StringBuilder("INSERT INTO pokemons (data) VALUES ");
@@ -203,6 +193,14 @@ public class SQLiteDatabaseClient extends DatabaseClient {
               insertStatement.setString(index++, Utils.newWithoutSpacingGson().toJson(pokemon));
             }
             insertStatement.executeUpdate();
+          }
+        } else {
+          long excessCount = currentCount - sizePool;
+          if (excessCount > 0) {
+            try (PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM pokemons WHERE id IN (SELECT id FROM pokemons ORDER BY RANDOM() LIMIT ?)")) {
+              deleteStatement.setLong(1, excessCount);
+              deleteStatement.executeUpdate();
+            }
           }
         }
         CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Size pool: " + sizePool + ", current count: " + currentCount);

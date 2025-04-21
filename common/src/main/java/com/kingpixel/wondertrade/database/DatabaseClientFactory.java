@@ -22,6 +22,8 @@ public class DatabaseClientFactory {
   public static Map<UUID, UserInfo> userInfoMap = new ConcurrentHashMap<>();
   public static DatabaseClient databaseClient;
   public static Date cooldown;
+  public static final int POKEMON_ANIMATION_SIZE = 8;
+  public static final int MIN_POOL_SIZE = POKEMON_ANIMATION_SIZE + 4;
 
 
   public static void createDatabaseClient(DataBaseConfig config) {
@@ -43,6 +45,32 @@ public class DatabaseClientFactory {
 
 
     databaseClient.connect();
+  }
+
+  public static List<Pokemon> getGeneratedPool(int sizePool, int currentSize) {
+    var pokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
+      CobbleWonderTrade.MOD_ID,
+      "pool",
+      sizePool - currentSize);
+
+    applyProperties(pokemons);
+    putLevels(pokemons);
+    return pokemons;
+  }
+
+
+  private static void applyProperties(List<Pokemon> pokemons) {
+    for (int i = 0; i < pokemons.size(); i++) {
+      Pokemon pokemon = pokemons.get(i);
+      int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
+      int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
+      if (legendary == 0 && !pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
+        pokemons.set(i, DatabaseClientFactory.getLegendary());
+      }
+      if (shiny == 0) {
+        pokemons.get(i).setShiny(true);
+      }
+    }
   }
 
   public static Pokemon getLegendary() {

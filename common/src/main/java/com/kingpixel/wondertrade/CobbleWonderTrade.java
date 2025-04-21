@@ -1,7 +1,6 @@
 package com.kingpixel.wondertrade;
 
 import ca.landonjw.gooeylibs2.api.tasks.Task;
-import club.minnced.discord.webhook.WebhookClient;
 import com.kingpixel.cobbleutils.CobbleUtils;
 import com.kingpixel.cobbleutils.Model.DataBaseType;
 import com.kingpixel.cobbleutils.Model.FilterPokemons;
@@ -18,6 +17,8 @@ import dev.architectury.event.events.common.PlayerEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * @author Carlos Varas Alonso - 28/04/2024 23:50
  */
@@ -29,7 +30,6 @@ public class CobbleWonderTrade {
   public static Lang language = new Lang();
   public static MinecraftServer server;
   public static Config config = new Config();
-  public static WebhookClient webhookClient;
   private static Task broadcastTask;
   private static Task autoResetPool;
   private static Task playerCheckTask;
@@ -42,13 +42,6 @@ public class CobbleWonderTrade {
     files();
     tasks();
     DatabaseClientFactory.createDatabaseClient(config.getDatabaseConfig());
-    if (config.getDiscord_webhook().isENABLED()) {
-      try {
-        webhookClient = WebhookClient.withUrl(config.getDiscord_webhook().getURL_WEBHOOK());
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
   }
 
   private static void events() {
@@ -91,23 +84,25 @@ public class CobbleWonderTrade {
     if (config.getCooldownmessage() > 0) {
       playerCheckTask = Task.builder()
         .execute(() -> {
-          if (config.isDebug()) {
-            CobbleUtils.LOGGER.info(MOD_ID, "Checking players");
-          }
-          var players = server.getPlayerManager().getPlayerList();
-          for (ServerPlayerEntity player : players) {
-            if (player == null) continue;
-            var userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
-            if (userInfo == null) continue;
-            if (!userInfo.hasCooldown()) {
-              PlayerUtils.sendMessage(
-                player,
-                language.getMessagewondertradeready(),
-                language.getPrefix(),
-                TypeMessage.CHAT
-              );
+          CompletableFuture.runAsync(() -> {
+            if (config.isDebug()) {
+              CobbleUtils.LOGGER.info(MOD_ID, "Checking players");
             }
-          }
+            var players = server.getPlayerManager().getPlayerList();
+            for (ServerPlayerEntity player : players) {
+              if (player == null) continue;
+              var userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
+              if (userInfo == null) continue;
+              if (!userInfo.hasCooldown()) {
+                PlayerUtils.sendMessage(
+                  player,
+                  language.getMessagewondertradeready(),
+                  language.getPrefix(),
+                  TypeMessage.CHAT
+                );
+              }
+            }
+          });
         })
         .interval(intervalPlayerCheck)
         .infinite()
@@ -120,8 +115,11 @@ public class CobbleWonderTrade {
           if (config.isDebug()) {
             CobbleUtils.LOGGER.info(MOD_ID, "Auto Reset Pool");
           }
-          DatabaseClientFactory.databaseClient.restartPool();
+          CompletableFuture.runAsync(() -> {
+            DatabaseClientFactory.databaseClient.restartPool();
+          });
         })
+        .delay(intervalAutoReset)
         .interval(intervalAutoReset)
         .infinite()
         .build();
@@ -130,19 +128,21 @@ public class CobbleWonderTrade {
     if (config.getCooldownBroadcast() > 0) {
       broadcastTask = Task.builder()
         .execute(() -> {
-          if (config.isDebug()) {
-            CobbleUtils.LOGGER.info(MOD_ID, "Broadcasting Pokemon stats");
-          }
-          CommandTree.PokemonStats stats =
-            CommandTree.calculatePokemonStats(DatabaseClientFactory.databaseClient.getAllPokemons());
-          String message = CommandTree.prepareLore(CobbleWonderTrade.language.getMessagepoolwondertrade(), stats)
-            .replace("%total%", stats.getPokemons().size() + "");
-          PlayerUtils.sendMessage(
-            null,
-            message,
-            language.getPrefix(),
-            TypeMessage.BROADCAST
-          );
+          CompletableFuture.runAsync(() -> {
+            if (config.isDebug()) {
+              CobbleUtils.LOGGER.info(MOD_ID, "Broadcasting Pokemon stats");
+            }
+            CommandTree.PokemonStats stats =
+              CommandTree.calculatePokemonStats(DatabaseClientFactory.databaseClient.getAllPokemons());
+            String message = CommandTree.prepareLore(CobbleWonderTrade.language.getMessagepoolwondertrade(), stats)
+              .replace("%total%", stats.getPokemons().size() + "");
+            PlayerUtils.sendMessage(
+              null,
+              message,
+              language.getPrefix(),
+              TypeMessage.BROADCAST
+            );
+          });
         })
         .interval(intervalBroadcast)
         .infinite()

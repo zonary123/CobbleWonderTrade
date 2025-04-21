@@ -3,6 +3,7 @@ package com.kingpixel.wondertrade.model;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import lombok.Data;
 
 import java.util.List;
@@ -18,32 +19,19 @@ public class Pool {
 
   public Pool() {
     this.cooldown = null;
-    this.pokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
-      CobbleWonderTrade.MOD_ID,
-      "pool",
-      CobbleWonderTrade.config.getSizePool()
-    );
+    this.pokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
   }
 
   public void fix() {
     if (this.pokemons == null) {
-      this.pokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
-        CobbleWonderTrade.MOD_ID,
-        "pool",
-        CobbleWonderTrade.config.getSizePool()
-      );
+      this.pokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
     } else {
       int sizePool = CobbleWonderTrade.config.getSizePool();
       if (pokemons.size() > sizePool) {
-        // Eliminar el exceso de elementos
         this.pokemons = this.pokemons.subList(0, sizePool);
       } else if (pokemons.size() < sizePool) {
         // Generar nuevos elementos para completar el tamaño
-        List<Pokemon> newPokemons = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(
-          CobbleWonderTrade.MOD_ID,
-          "pool",
-          sizePool - pokemons.size()
-        );
+        List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(sizePool, this.pokemons.size());
         this.pokemons.addAll(newPokemons);
       }
     }
@@ -62,7 +50,7 @@ public class Pool {
     if (this.pokemons == null || this.pokemons.isEmpty()) return List.of();
     return Utils.RANDOM.ints(0, pokemons.size())
       .distinct()
-      .limit(5)
+      .limit(DatabaseClientFactory.POKEMON_ANIMATION_SIZE)
       .mapToObj(pokemons::get)
       .toList();
   }

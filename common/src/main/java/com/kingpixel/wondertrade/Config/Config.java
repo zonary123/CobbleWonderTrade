@@ -1,12 +1,11 @@
 package com.kingpixel.wondertrade.Config;
 
+import com.cobblemon.mod.common.api.pokemon.labels.CobblemonPokemonLabels;
 import com.google.gson.Gson;
-import com.kingpixel.cobbleutils.Model.DataBaseConfig;
-import com.kingpixel.cobbleutils.Model.FilterPokemons;
-import com.kingpixel.cobbleutils.Model.PokemonBlackList;
-import com.kingpixel.cobbleutils.Model.WebHookData;
+import com.kingpixel.cobbleutils.Model.*;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -22,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 public class Config {
   private boolean debug;
   private String lang;
+  private AdvancedItemChance.Animations animation;
   private boolean autoReset;
   private int cooldownReset;
   private List<String> commands;
@@ -41,12 +41,14 @@ public class Config {
   private Map<String, Integer> cooldownPermission;
   private List<String> poketradeblacklist;
   private List<String> legends;
+  private PokemonBlackList specialPokemons;
   private PokemonBlackList blackList;
   private FilterPokemons filterGenerationPokemon;
 
   public Config() {
     debug = false;
     lang = "en";
+    animation = AdvancedItemChance.Animations.CSGO;
     autoReset = false;
     cooldownReset = 30;
     discord_webhook = new WebHookData("", "", "");
@@ -63,16 +65,29 @@ public class Config {
     poolview = true;
     israndom = false;
     cooldownPermission = Map.of(
-      "wondertrade.bypasscooldown", 0,
       "wondertrade.vip", 15,
-      "wondertrade.vip+", 10,
-      "wondertrade.vip++", 5
+      "wondertrade.master", 10,
+      "wondertrade.legendary", 5
     );
     poketradeblacklist = List.of("Magikarp", "egg", "pokestop");
     legends = List.of("Magikarp");
     commands = List.of("wt", "wondertrade");
     filterGenerationPokemon = new FilterPokemons();
     blackList = new PokemonBlackList();
+    specialPokemons = new PokemonBlackList();
+    specialPokemons.getPokemons().clear();
+    specialPokemons.getEggGroups().clear();
+    specialPokemons.getTypes().clear();
+    specialPokemons.getLabels().clear();
+    specialPokemons.getForms().clear();
+    specialPokemons.getLabels().addAll(
+      List.of(
+        CobblemonPokemonLabels.LEGENDARY,
+        CobblemonPokemonLabels.MYTHICAL,
+        CobblemonPokemonLabels.PARADOX,
+        CobblemonPokemonLabels.ULTRA_BEAST
+      )
+    );
   }
 
   public void init() {
@@ -103,6 +118,9 @@ public class Config {
   }
 
   private void fix() {
+    if (sizePool < DatabaseClientFactory.MIN_POOL_SIZE) {
+      sizePool = DatabaseClientFactory.MIN_POOL_SIZE;
+    }
     if (!poketradeblacklist.isEmpty()) {
       List<String> remove = new ArrayList<>();
       for (String s : poketradeblacklist) {

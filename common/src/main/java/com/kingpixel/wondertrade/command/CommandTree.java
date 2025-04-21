@@ -5,8 +5,10 @@ import ca.landonjw.gooeylibs2.api.button.GooeyButton;
 import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.pokemon.labels.CobblemonPokemonLabels;
+import com.cobblemon.mod.common.item.PokemonItem;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.CobbleUtils;
+import com.kingpixel.cobbleutils.Model.AdvancedItemChance;
 import com.kingpixel.cobbleutils.Model.ItemModel;
 import com.kingpixel.cobbleutils.api.PermissionApi;
 import com.kingpixel.cobbleutils.ui.PartyPcMenu;
@@ -18,13 +20,14 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.Data;
 import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import org.joml.Vector4f;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -203,7 +206,7 @@ public class CommandTree {
   public static List<String> prepareLore(List<String> loreTemplate, PokemonStats stats, UserInfo userinfo) {
     String cooldown;
     if (userinfo != null) {
-      cooldown = PlayerUtils.getCooldown(new Date(userinfo.getDate()));
+      cooldown = PlayerUtils.getCooldown(userinfo.getDate());
     } else {
       cooldown = "";
     }
@@ -235,7 +238,7 @@ public class CommandTree {
           return;
         }
 
-        if (pokemon.getLevel() <= CobbleWonderTrade.config.getMinlvreq()) {
+        if (pokemon.getLevel() < CobbleWonderTrade.config.getMinlvreq()) {
           sendMinLevelMessage(player, pokemon);
           return;
         }
@@ -277,7 +280,7 @@ public class CommandTree {
   }
 
   private static void sendCooldownMessage(ServerPlayerEntity player, UserInfo userInfo) {
-    String cooldown = PlayerUtils.getCooldown(new Date(userInfo.getDate()));
+    String cooldown = PlayerUtils.getCooldown(userInfo.getDate());
     PlayerUtils.sendMessage(
       player,
       CobbleWonderTrade.language.getMessagewondertradecooldown()
@@ -301,22 +304,66 @@ public class CommandTree {
   private static void updatePlayerStorage(ServerPlayerEntity player, Pokemon oldPokemon, Pokemon newPokemon) {
     PlayerUtils.sendMessage(
       player,
-      PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade()
-        .replace("%player%", player.getGameProfile().getName()), oldPokemon),
+      PokemonUtils.replace(CobbleWonderTrade.language.getMessagePokemonToWondertrade(), oldPokemon)
+        .replace("%player%", player.getGameProfile().getName()),
       CobbleWonderTrade.language.getPrefix(),
       TypeMessage.BROADCAST
     );
+
     PlayerUtils.sendMessage(
       player,
-      PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(), newPokemon),
+      PokemonUtils.replace(CobbleWonderTrade.language.getMessagewondertraderecieved(), newPokemon)
+        .replace("%player%", player.getGameProfile().getName()),
       CobbleWonderTrade.language.getPrefix(),
       TypeMessage.CHAT
+    );
+
+    sendWebHook(oldPokemon, newPokemon, player);
+    List<Pokemon> animations;
+    if (CobbleWonderTrade.config.isIsrandom()) {
+      animations = DatabaseClientFactory.databaseClient.getPokemonsAnimation();
+    } else {
+      animations =
+        CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemons(CobbleWonderTrade.MOD_ID, "pool"
+          , DatabaseClientFactory.POKEMON_ANIMATION_SIZE);
+    }
+
+    var tintNotObtained = new Vector4f(0.5f, 0.5f, 0.5f, 1);
+    var animationsItems = animations.stream()
+      .map(pokemon -> PokemonItem.from(pokemon, 1, tintNotObtained))
+      .toList();
+
+    var tintObtained = new Vector4f(1, 1, 1, 1);
+    List<ItemStack> pokemonItem = new ArrayList<>();
+    pokemonItem.add(PokemonItem.from(newPokemon, 1, tintObtained));
+    AdvancedItemChance.initAnimation(
+      CobbleWonderTrade.config.getAnimation(),
+      player,
+      animationsItems,
+      pokemonItem
     );
     var party = Cobblemon.INSTANCE.getStorage().getParty(player);
     var pc = Cobblemon.INSTANCE.getStorage().getPC(player);
 
     if (!party.remove(oldPokemon)) pc.remove(oldPokemon);
     party.add(newPokemon);
+  }
+
+  private static void sendWebHook(Pokemon oldPokemon, Pokemon newPokemon, ServerPlayerEntity player) {
+    if (!CobbleWonderTrade.config.getDiscord_webhook().isENABLED()) return;
+    var webHook = CobbleWonderTrade.config.getDiscord_webhook();
+    boolean specialPut = oldPokemon.getShiny() | CobbleWonderTrade.config.getSpecialPokemons().isBlackListed(oldPokemon);
+    if (!specialPut) {
+      webHook.sendWebHook(CobbleWonderTrade.MOD_ID, CobbleWonderTrade.language.getWebHookPutPool(), List.of(player), List.of(oldPokemon));
+    } else {
+      webHook.sendWebHook(CobbleWonderTrade.MOD_ID, CobbleWonderTrade.language.getWebHookSpecialPutPool(), List.of(player), List.of(oldPokemon));
+    }
+    boolean specialObtained = newPokemon.getShiny() | CobbleWonderTrade.config.getSpecialPokemons().isBlackListed(newPokemon);
+    if (!specialObtained) {
+      webHook.sendWebHook(CobbleWonderTrade.MOD_ID, CobbleWonderTrade.language.getWebHookObtainedPool(), List.of(player), List.of(newPokemon));
+    } else {
+      webHook.sendWebHook(CobbleWonderTrade.MOD_ID, CobbleWonderTrade.language.getWebHookSpecialObtainedPool(), List.of(player), List.of(newPokemon));
+    }
   }
 
   // Clase auxiliar para estadísticas de Pokémon
