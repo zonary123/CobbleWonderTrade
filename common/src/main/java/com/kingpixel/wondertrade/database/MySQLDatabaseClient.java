@@ -196,4 +196,39 @@ public class MySQLDatabaseClient extends DatabaseClient {
       e.printStackTrace();
     }
   }
+
+  @Override public boolean shouldRestartPool() {
+    if (!super.shouldRestartPool()) return false;
+    long currentTime = System.currentTimeMillis();
+    long nextRestartTime = CobbleWonderTrade.config.getCooldownReset() * 60 * 1000L; // Convertir minutos a milisegundos
+
+    try (Statement statement = connection.createStatement()) {
+      ResultSet resultSet = statement.executeQuery("SELECT restart_at FROM restart_info LIMIT 1");
+
+      if (resultSet.next()) {
+        long restartAt = resultSet.getLong("restart_at");
+
+        if (currentTime >= restartAt) {
+          // Actualizar el tiempo de reinicio
+          try (PreparedStatement updateStatement = connection.prepareStatement(
+            "UPDATE restart_info SET restart_at = ? WHERE id = 1")) {
+            updateStatement.setLong(1, currentTime + nextRestartTime);
+            updateStatement.executeUpdate();
+          }
+          return true;
+        }
+      } else {
+        // Insertar un nuevo registro si no existe
+        try (PreparedStatement insertStatement = connection.prepareStatement(
+          "INSERT INTO restart_info (restart_at) VALUES (?)")) {
+          insertStatement.setLong(1, currentTime + nextRestartTime);
+          insertStatement.executeUpdate();
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return false;
+  }
 }

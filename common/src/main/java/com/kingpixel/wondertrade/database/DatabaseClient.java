@@ -1,6 +1,7 @@
 package com.kingpixel.wondertrade.database;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.model.UserInfo;
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -19,6 +20,11 @@ public abstract class DatabaseClient {
   public abstract void updateUserInfo(ServerPlayerEntity player, UserInfo userinfo);
 
   public abstract void fixPool();
+
+  public boolean shouldRestartPool() {
+    return CobbleWonderTrade.config.isAutoReset() && !CobbleWonderTrade.config.isIsrandom()
+      && CobbleWonderTrade.config.getCooldownReset() > 0;
+  }
 
   public abstract void restartPool();
 

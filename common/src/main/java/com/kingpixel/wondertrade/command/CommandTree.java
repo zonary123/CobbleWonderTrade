@@ -124,6 +124,8 @@ public class CommandTree {
 
   public static void open(ServerPlayerEntity player) {
     if (player == null) return;
+    var battle = Cobblemon.INSTANCE.getBattleRegistry().getBattleByParticipatingPlayer(player);
+    if (battle != null) return;
 
     var build = PartyPcMenu.builder()
       .setPlayer(player)
@@ -249,6 +251,12 @@ public class CommandTree {
         Pokemon pokemonObtained;
         if (!CobbleWonderTrade.config.isIsrandom()) {
           pokemonObtained = DatabaseClientFactory.databaseClient.tradePokemon(player, pokemon);
+          if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
+            if (CobbleWonderTrade.config.isDebug()) {
+              CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Resetting Pool");
+            }
+            DatabaseClientFactory.databaseClient.restartPool();
+          }
         } else {
           pokemonObtained = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemon(
             CobbleWonderTrade.MOD_ID,

@@ -24,6 +24,7 @@ public class MongoDBDatabaseClient extends DatabaseClient {
   private MongoDatabase database;
   private MongoCollection<Document> pokemonsCollection;
   private MongoCollection<Document> userInfoCollection;
+  private MongoCollection<Document> restartCollection;
 
   public MongoDBDatabaseClient(DataBaseConfig config) {
     String connectionString = config.getUrl();
@@ -31,6 +32,7 @@ public class MongoDBDatabaseClient extends DatabaseClient {
     this.database = mongoClient.getDatabase(config.getDatabase());
     this.pokemonsCollection = database.getCollection("pokemons");
     this.userInfoCollection = database.getCollection("user_info");
+    this.restartCollection = database.getCollection("restart");
   }
 
   @Override
@@ -149,5 +151,34 @@ public class MongoDBDatabaseClient extends DatabaseClient {
       }
     }
     CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Size pool: " + sizePool + ", current count: " + currentCount);
+  }
+
+  @Override
+  public boolean shouldRestartPool() {
+    if (!super.shouldRestartPool()) return false;
+
+    var restartDocument = restartCollection.find().first();
+
+    long currentTime = System.currentTimeMillis();
+    long nextRestartTime = TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldownReset());
+
+    if (restartDocument == null) {
+      // Si no existe un registro, crear uno con el tiempo actual + cooldown
+      restartCollection.insertOne(new Document("restartAt", currentTime + nextRestartTime));
+      return false;
+    }
+
+    long restartAt = restartDocument.getLong("restartAt");
+
+    if (currentTime >= restartAt) {
+      // Si ya es hora de reiniciar, actualizar el tiempo de reinicio y reiniciar la pool
+      restartCollection.updateOne(
+        new Document("_id", restartDocument.get("_id")),
+        new Document("$set", new Document("restartAt", currentTime + nextRestartTime))
+      );
+      return true;
+    }
+
+    return false;
   }
 }

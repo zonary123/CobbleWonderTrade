@@ -116,10 +116,14 @@ public class CobbleWonderTrade {
             CobbleUtils.LOGGER.info(MOD_ID, "Auto Reset Pool");
           }
           CompletableFuture.runAsync(() -> {
-            DatabaseClientFactory.databaseClient.restartPool();
+            if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
+              if (config.isDebug()) {
+                CobbleUtils.LOGGER.info(MOD_ID, "Resetting Pool");
+              }
+              DatabaseClientFactory.databaseClient.restartPool();
+            }
           });
         })
-        .delay(intervalAutoReset)
         .interval(intervalAutoReset)
         .infinite()
         .build();

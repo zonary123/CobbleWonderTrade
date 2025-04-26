@@ -62,13 +62,17 @@ public class DatabaseClientFactory {
   private static void applyProperties(List<Pokemon> pokemons) {
     for (int i = 0; i < pokemons.size(); i++) {
       Pokemon pokemon = pokemons.get(i);
-      int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
-      int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
-      if (legendary == 0 && !pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
-        pokemons.set(i, DatabaseClientFactory.getLegendary());
+      if (CobbleWonderTrade.config.getLegendaryrate() > 0) {
+        int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
+        if (legendary == 0 && !pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
+          pokemons.set(i, DatabaseClientFactory.getLegendary());
+        }
       }
-      if (shiny == 0) {
-        pokemons.get(i).setShiny(true);
+      if (CobbleWonderTrade.config.getShinyrate() > 0) {
+        int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
+        if (shiny == 0) {
+          pokemons.get(i).setShiny(true);
+        }
       }
     }
   }

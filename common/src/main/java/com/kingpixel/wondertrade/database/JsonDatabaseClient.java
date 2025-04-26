@@ -77,8 +77,12 @@ public class JsonDatabaseClient extends DatabaseClient {
     return null;
   }
 
+  @Override public boolean shouldRestartPool() {
+    if (!super.shouldRestartPool()) return false;
+    return !pool.hasCooldown();
+  }
+
   @Override public Pokemon tradePokemon(ServerPlayerEntity player, Pokemon pokemon) {
-    if (!pool.hasCooldown()) restartPool();
     var trade = pool.tradePokemon(pokemon);
     updatePool();
     return trade;

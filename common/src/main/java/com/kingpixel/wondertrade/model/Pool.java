@@ -18,7 +18,7 @@ public class Pool {
   private List<Pokemon> pokemons;
 
   public Pool() {
-    this.cooldown = null;
+    this.cooldown = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldownReset());
     this.pokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
   }
 
@@ -38,9 +38,7 @@ public class Pool {
   }
 
   public Pokemon tradePokemon(Pokemon pokemon) {
-    if (this.pokemons == null || this.pokemons.isEmpty()) {
-      fix();
-    }
+    if (this.pokemons == null || this.pokemons.isEmpty()) fix();
     var trade = this.pokemons.remove(Utils.RANDOM.nextInt(this.pokemons.size()));
     this.pokemons.add(pokemon);
     return trade;
@@ -56,9 +54,10 @@ public class Pool {
   }
 
   public boolean hasCooldown() {
+    if (!CobbleWonderTrade.config.isAutoReset()) return true;
     boolean hasCooldown = this.cooldown != null && this.cooldown > System.currentTimeMillis();
-    if (hasCooldown) this.cooldown =
-      System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldownReset());
+    if (!hasCooldown)
+      setCooldown(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldownReset()));
     return hasCooldown;
   }
 }
