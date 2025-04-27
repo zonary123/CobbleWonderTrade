@@ -146,6 +146,13 @@ public class CommandTree {
           // Crear botón
           GooeyButton button = itemModelInfo.getButton(1, itemModelInfo.getDisplayname(), lore,
             action -> {
+              if (!PermissionApi.hasPermission(player, List.of(CobbleWonderTrade.MOD_ID + ".admin", CobbleWonderTrade.MOD_ID + ".info"), 2)) {
+                PlayerUtils.sendMessage(player,
+                  "You don't have permission to view this!",
+                  CobbleWonderTrade.language.getPrefix(),
+                  TypeMessage.CHAT);
+                return;
+              }
               List<Pokemon> list;
               switch (action.getClickType()) {
                 case RIGHT_CLICK, SHIFT_RIGHT_CLICK -> list = stats.getSpecial();
@@ -165,6 +172,7 @@ public class CommandTree {
       .setCloseAction(close -> {
         open(player);
       })
+      .setCustomFilter(pokemon -> !pokemon.getTradeable())
       .setBlackList(CobbleWonderTrade.config.getBlackList())
       .build();
 

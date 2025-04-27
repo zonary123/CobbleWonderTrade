@@ -8,7 +8,6 @@ import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -69,8 +68,6 @@ public class Config {
       "wondertrade.master", 10,
       "wondertrade.legendary", 5
     );
-    poketradeblacklist = List.of("Magikarp", "egg", "pokestop");
-    legends = List.of("Magikarp");
     commands = List.of("wt", "wondertrade");
     filterGenerationPokemon = new FilterPokemons();
     blackList = new PokemonBlackList();
@@ -99,9 +96,6 @@ public class Config {
         String data = gson.toJson(CobbleWonderTrade.config);
         CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH, "config.json",
           data);
-        if (!futureWrite.join()) {
-
-        }
       });
 
     if (!futureRead.join()) {
@@ -118,24 +112,18 @@ public class Config {
   }
 
   private void fix() {
-    if (sizePool < DatabaseClientFactory.MIN_POOL_SIZE) {
-      sizePool = DatabaseClientFactory.MIN_POOL_SIZE;
-    }
-    if (!poketradeblacklist.isEmpty()) {
-      List<String> remove = new ArrayList<>();
+    if (sizePool < DatabaseClientFactory.MIN_POOL_SIZE) sizePool = DatabaseClientFactory.MIN_POOL_SIZE;
+    if (poketradeblacklist != null) {
       for (String s : poketradeblacklist) {
         blackList.getPokemons().add(s);
-        remove.add(s);
       }
-      poketradeblacklist.removeAll(remove);
+      poketradeblacklist = null;
     }
-    if (!legends.isEmpty()) {
-      List<String> remove = new ArrayList<>();
+    if (legends != null) {
       for (String s : legends) {
         blackList.getPokemons().add(s);
-        remove.add(s);
       }
-      legends.removeAll(remove);
+      legends = null;
     }
   }
 }
