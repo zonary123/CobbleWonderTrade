@@ -238,61 +238,54 @@ public class CommandTree {
   }
 
   private static void handlePokemonAction(ServerPlayerEntity player, Pokemon pokemon) {
-    CompletableFuture.runAsync(() -> {
-        long currentTime = System.currentTimeMillis();
-        UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
+    long currentTime = System.currentTimeMillis();
+    UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
 
-        if (userInfo.hasCooldown()) {
-          sendCooldownMessage(player, userInfo);
-          UIManager.closeUI(player);
-          return;
+    if (userInfo.hasCooldown()) {
+      sendCooldownMessage(player, userInfo);
+      UIManager.closeUI(player);
+      return;
+    }
+
+    if (pokemon.getLevel() < CobbleWonderTrade.config.getMinlvreq()) {
+      sendMinLevelMessage(player, pokemon);
+      return;
+    }
+
+    UIManager.closeUI(player);
+    userInfo.setCooldown(player);
+    DatabaseClientFactory.databaseClient.updateUserInfo(player, userInfo);
+    Pokemon pokemonObtained;
+    if (!CobbleWonderTrade.config.isIsrandom()) {
+      pokemonObtained = DatabaseClientFactory.databaseClient.tradePokemon(player, pokemon);
+      if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
+        if (CobbleWonderTrade.config.isDebug()) {
+          CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Resetting Pool");
         }
+        DatabaseClientFactory.databaseClient.restartPool();
+      }
+    } else {
+      pokemonObtained = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemon(
+        CobbleWonderTrade.MOD_ID,
+        "pool");
 
-        if (pokemon.getLevel() < CobbleWonderTrade.config.getMinlvreq()) {
-          sendMinLevelMessage(player, pokemon);
-          return;
-        }
-
-        UIManager.closeUI(player);
-        userInfo.setCooldown(player);
-        DatabaseClientFactory.databaseClient.updateUserInfo(player, userInfo);
-        Pokemon pokemonObtained;
-        if (!CobbleWonderTrade.config.isIsrandom()) {
-          pokemonObtained = DatabaseClientFactory.databaseClient.tradePokemon(player, pokemon);
-          if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
-            if (CobbleWonderTrade.config.isDebug()) {
-              CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Resetting Pool");
-            }
-            DatabaseClientFactory.databaseClient.restartPool();
-          }
-        } else {
-          pokemonObtained = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemon(
-            CobbleWonderTrade.MOD_ID,
-            "pool");
-
-          int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
-          int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
-          if (legendary == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
-            pokemonObtained = DatabaseClientFactory.getLegendary();
-          }
-          if (shiny == 0) {
-            pokemonObtained.setShiny(true);
-          }
-          if (CobbleWonderTrade.config.isDebug()) {
-            CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Legendary: " + legendary);
-            CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Shiny: " + shiny);
-          }
-          DatabaseClientFactory.setLevel(pokemonObtained);
-        }
-        updatePlayerStorage(player, pokemon, pokemonObtained);
-        long time = System.currentTimeMillis() - currentTime;
-        if (CobbleWonderTrade.config.isDebug()) CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Time: " + time + "ms");
-      })
-      .orTimeout(5, TimeUnit.SECONDS)
-      .exceptionally(e -> {
-        e.printStackTrace();
-        return null;
-      });
+      int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
+      int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
+      if (legendary == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
+        pokemonObtained = DatabaseClientFactory.getLegendary();
+      }
+      if (shiny == 0) {
+        pokemonObtained.setShiny(true);
+      }
+      if (CobbleWonderTrade.config.isDebug()) {
+        CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Legendary: " + legendary);
+        CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Shiny: " + shiny);
+      }
+      DatabaseClientFactory.setLevel(pokemonObtained);
+    }
+    updatePlayerStorage(player, pokemon, pokemonObtained);
+    long time = System.currentTimeMillis() - currentTime;
+    if (CobbleWonderTrade.config.isDebug()) CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Time: " + time + "ms");
   }
 
   private static void sendCooldownMessage(ServerPlayerEntity player, UserInfo userInfo) {

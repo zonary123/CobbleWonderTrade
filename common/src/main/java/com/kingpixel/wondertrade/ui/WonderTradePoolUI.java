@@ -22,8 +22,6 @@ import net.minecraft.component.type.LoreComponent;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Carlos Varas Alonso - 16/04/2025 20:51
@@ -57,63 +55,57 @@ public class WonderTradePoolUI {
 
   public void open(ServerPlayerEntity player, List<Pokemon> pokemons) {
     if (player == null || pokemons == null || pokemons.isEmpty()) return;
-    CompletableFuture.runAsync(() -> {
-        long currentTime = System.currentTimeMillis();
-        if (cooldowns.containsKey(player.getUuid())) {
-          long lastTime = cooldowns.get(player.getUuid());
-          if (currentTime - lastTime < COOLDOWN_MS) {
-            player.sendMessage(AdventureTranslator.toNative("You are clicking too fast!"));
-            return;
-          }
-        } else {
-          cooldowns.put(player.getUuid(), currentTime);
-        }
-        var template = ChestTemplate
-          .builder(rows)
-          .build();
 
-        PanelsConfig.applyConfig(template, panels);
-        rectangle.apply(template);
+    long currentTime = System.currentTimeMillis();
+    if (cooldowns.containsKey(player.getUuid())) {
+      long lastTime = cooldowns.get(player.getUuid());
+      if (currentTime - lastTime < COOLDOWN_MS) {
+        player.sendMessage(AdventureTranslator.toNative("You are clicking too fast!"));
+        return;
+      }
+    } else {
+      cooldowns.put(player.getUuid(), currentTime);
+    }
+    var template = ChestTemplate
+      .builder(rows)
+      .build();
 
-        List<Button> buttons = new ArrayList<>();
+    PanelsConfig.applyConfig(template, panels);
+    rectangle.apply(template);
 
-        for (Pokemon pokemon : pokemons) {
-          GooeyButton button = GooeyButton.builder()
-            .display(PokemonItem.from(pokemon))
-            .with(DataComponentTypes.CUSTOM_NAME, AdventureTranslator.toNative(PokemonUtils.replace(pokemon)))
-            .with(DataComponentTypes.LORE, new LoreComponent(
-              AdventureTranslator.toNativeL(
-                PokemonUtils.replaceLore(pokemon)
-              )
-            ))
-            .build();
-          buttons.add(button);
-        }
-        previous.applyTemplate(template, LinkedPageButton.builder()
-          .display(previous.getItemStack())
-          .linkType(LinkType.Previous)
-          .build());
-        next.applyTemplate(template, LinkedPageButton.builder()
-          .display(next.getItemStack())
-          .linkType(LinkType.Next)
-          .build());
-        close.applyTemplate(template, close.getButton(action -> CommandTree.open(action.getPlayer())));
+    List<Button> buttons = new ArrayList<>();
 
-        var builder = LinkedPage.builder()
-          .title(AdventureTranslator.toNative(title));
+    for (Pokemon pokemon : pokemons) {
+      GooeyButton button = GooeyButton.builder()
+        .display(PokemonItem.from(pokemon))
+        .with(DataComponentTypes.CUSTOM_NAME, AdventureTranslator.toNative(PokemonUtils.replace(pokemon)))
+        .with(DataComponentTypes.LORE, new LoreComponent(
+          AdventureTranslator.toNativeL(
+            PokemonUtils.replaceLore(pokemon)
+          )
+        ))
+        .build();
+      buttons.add(button);
+    }
+    previous.applyTemplate(template, LinkedPageButton.builder()
+      .display(previous.getItemStack())
+      .linkType(LinkType.Previous)
+      .build());
+    next.applyTemplate(template, LinkedPageButton.builder()
+      .display(next.getItemStack())
+      .linkType(LinkType.Next)
+      .build());
+    close.applyTemplate(template, close.getButton(action -> CommandTree.open(action.getPlayer())));
 
-        GooeyPage page = PaginationHelper.createPagesFromPlaceholders(
-          template,
-          buttons,
-          builder
-        );
+    var builder = LinkedPage.builder()
+      .title(AdventureTranslator.toNative(title));
 
-        UIManager.openUIForcefully(player, page);
-      })
-      .orTimeout(5, TimeUnit.SECONDS)
-      .exceptionally(e -> {
-        e.printStackTrace();
-        return null;
-      });
+    GooeyPage page = PaginationHelper.createPagesFromPlaceholders(
+      template,
+      buttons,
+      builder
+    );
+
+    UIManager.openUIForcefully(player, page);
   }
 }
