@@ -26,6 +26,7 @@ public class Pool {
     if (this.pokemons == null) {
       this.pokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
     } else {
+      pokemons.removeIf(pokemon -> pokemon == null || CobbleWonderTrade.config.getBlackList().isBlackListed(pokemon));
       int sizePool = CobbleWonderTrade.config.getSizePool();
       if (pokemons.size() > sizePool) {
         this.pokemons = this.pokemons.subList(0, sizePool);
@@ -39,7 +40,7 @@ public class Pool {
 
   public Pokemon tradePokemon(Pokemon pokemon) {
     if (this.pokemons == null || this.pokemons.isEmpty()) fix();
-    var trade = this.pokemons.remove(Utils.RANDOM.nextInt(this.pokemons.size()));
+    var trade = this.pokemons.remove(Utils.getRandom().nextInt(this.pokemons.size()));
     this.pokemons.add(pokemon);
     return trade;
   }

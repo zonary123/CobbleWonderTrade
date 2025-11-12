@@ -1,6 +1,6 @@
 package com.kingpixel.wondertrade;
 
-import ca.landonjw.gooeylibs2.api.tasks.Task;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.kingpixel.cobbleutils.CobbleUtils;
 import com.kingpixel.cobbleutils.Model.DataBaseType;
 import com.kingpixel.cobbleutils.Model.FilterPokemons;
@@ -17,10 +17,11 @@ import dev.architectury.event.events.common.PlayerEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
+import java.util.concurrent.*;
 
 /**
- * @author Carlos Varas Alonso - 28/04/2024 23:50
+ * Optimized version using ScheduledExecutorService to avoid duplicate tasks.
  */
 public class CobbleWonderTrade {
   public static final String MOD_ID = "wondertrade";
@@ -30,9 +31,19 @@ public class CobbleWonderTrade {
   public static Lang language = new Lang();
   public static MinecraftServer server;
   public static Config config = new Config();
-  private static Task broadcastTask;
-  private static Task autoResetPool;
-  private static Task playerCheckTask;
+
+  public static final Executor EXECUTOR_WONDERTRADE = Executors.newFixedThreadPool(
+    2,
+    new ThreadFactoryBuilder().setNameFormat("Executor-WonderTrade-%d").setDaemon(true).build()
+  );
+  private static final ScheduledExecutorService SCHEDULER_WONDERTRADE = Executors.newScheduledThreadPool(
+    2,
+    new ThreadFactoryBuilder().setNameFormat("Scheduler-WonderTrade-%d").setDaemon(true).build()
+  );
+
+  private static ScheduledFuture<?> broadcastFuture;
+  private static ScheduledFuture<?> autoResetFuture;
+  private static ScheduledFuture<?> playerCheckFuture;
 
   public static void init() {
     events();
@@ -40,7 +51,7 @@ public class CobbleWonderTrade {
 
   public static void load() {
     files();
-    tasks();
+    scheduleTasks();
     DatabaseClientFactory.createDatabaseClient(config.getDatabaseConfig());
   }
 
@@ -51,16 +62,22 @@ public class CobbleWonderTrade {
 
     LifecycleEvent.SERVER_STARTED.register(server -> load());
 
-    PlayerEvent.PLAYER_JOIN.register(player -> DatabaseClientFactory.databaseClient.getUserInfo(player));
+    PlayerEvent.PLAYER_JOIN.register(player -> {
+      CompletableFuture.runAsync(() -> DatabaseClientFactory.databaseClient.getUserInfo(player), EXECUTOR_WONDERTRADE)
+        .exceptionally(e -> {
+          e.printStackTrace();
+          return null;
+        });
+    });
 
     PlayerEvent.PLAYER_QUIT.register(player -> DatabaseClientFactory.databaseClient.removeIfNecessary(player));
 
     LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> server = level.getServer());
 
     LifecycleEvent.SERVER_STOPPING.register((server) -> {
+      shutdownScheduler();
       DatabaseClientFactory.databaseClient.disconnect();
     });
-
   }
 
   private static void files() {
@@ -68,89 +85,60 @@ public class CobbleWonderTrade {
     config.init();
     language.init();
     if (config.getDatabaseConfig().getType() == DataBaseType.JSON) {
-      Utils.getAbsolutePath(CobbleWonderTrade.PATH_DATA_USER).mkdirs();
+      Utils.getAbsolutePath(PATH_DATA_USER).mkdirs();
     }
   }
 
-  private static void tasks() {
-    if (playerCheckTask != null) playerCheckTask.setExpired();
-    if (broadcastTask != null) broadcastTask.setExpired();
-    if (autoResetPool != null) autoResetPool.setExpired();
+  private static void scheduleTasks() {
+    // Cancel previous tasks if they exist
+    if (playerCheckFuture != null) playerCheckFuture.cancel(true);
+    if (autoResetFuture != null) autoResetFuture.cancel(true);
+    if (broadcastFuture != null) broadcastFuture.cancel(true);
 
-    long intervalBroadcast = 20L * 60 * config.getCooldownBroadcast();
-    long intervalAutoReset = 20L * 60 * config.getCooldownReset();
-    long intervalPlayerCheck = 20L * 60 * config.getCooldownmessage();
+    long intervalBroadcast = 60L * config.getCooldownBroadcast();
+    long intervalAutoReset = 60L * config.getCooldownReset();
+    long intervalPlayerCheck = 60L * config.getCooldownmessage();
 
+    // Player check task
     if (config.getCooldownmessage() > 0) {
-      playerCheckTask = Task.builder()
-        .execute(() -> {
-          CompletableFuture.runAsync(() -> {
-            if (config.isDebug()) {
-              CobbleUtils.LOGGER.info(MOD_ID, "Checking players");
-            }
-            var players = server.getPlayerManager().getPlayerList();
-            for (ServerPlayerEntity player : players) {
-              if (player == null) continue;
-              var userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
-              if (userInfo == null) continue;
-              if (!userInfo.hasCooldown()) {
-                PlayerUtils.sendMessage(
-                  player,
-                  language.getMessagewondertradeready(),
-                  language.getPrefix(),
-                  TypeMessage.CHAT
-                );
-              }
-            }
-          });
-        })
-        .interval(intervalPlayerCheck)
-        .infinite()
-        .build();
-    }
-
-    if (config.getCooldownReset() > 0 && config.isAutoReset() && !config.isIsrandom()) {
-      autoResetPool = Task.builder()
-        .execute(() -> {
-          if (config.isDebug()) {
-            CobbleUtils.LOGGER.info(MOD_ID, "Auto Reset Pool");
+      playerCheckFuture = SCHEDULER_WONDERTRADE.scheduleWithFixedDelay(() -> {
+        if (config.isDebug()) CobbleUtils.LOGGER.info(MOD_ID, "Checking players");
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+          if (player == null) continue;
+          var userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
+          if (userInfo != null && !userInfo.hasCooldown()) {
+            PlayerUtils.sendMessage(player, language.getMessagewondertradeready(), language.getPrefix(), TypeMessage.CHAT);
           }
-          CompletableFuture.runAsync(() -> {
-            if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
-              if (config.isDebug()) {
-                CobbleUtils.LOGGER.info(MOD_ID, "Resetting Pool");
-              }
-              DatabaseClientFactory.databaseClient.restartPool();
-            }
-          });
-        })
-        .interval(intervalAutoReset)
-        .infinite()
-        .build();
+        }
+      }, 10, intervalPlayerCheck, TimeUnit.SECONDS);
     }
 
+    // Auto reset pool task
+    if (config.getCooldownReset() > 0 && config.isAutoReset() && !config.isIsrandom()) {
+      autoResetFuture = SCHEDULER_WONDERTRADE.scheduleWithFixedDelay(() -> {
+        if (config.isDebug()) CobbleUtils.LOGGER.info(MOD_ID, "Auto Reset Pool");
+        if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
+          if (config.isDebug()) CobbleUtils.LOGGER.info(MOD_ID, "Resetting Pool");
+          DatabaseClientFactory.databaseClient.restartPool();
+        }
+      }, 10, intervalAutoReset, TimeUnit.SECONDS);
+    }
+
+    // Broadcast task
     if (config.getCooldownBroadcast() > 0) {
-      broadcastTask = Task.builder()
-        .execute(() -> {
-          CompletableFuture.runAsync(() -> {
-            if (config.isDebug()) {
-              CobbleUtils.LOGGER.info(MOD_ID, "Broadcasting Pokemon stats");
-            }
-            CommandTree.PokemonStats stats =
-              CommandTree.calculatePokemonStats(DatabaseClientFactory.databaseClient.getAllPokemons());
-            String message = CommandTree.prepareLore(CobbleWonderTrade.language.getMessagepoolwondertrade(), stats)
-              .replace("%total%", stats.getPokemons().size() + "");
-            PlayerUtils.sendMessage(
-              null,
-              message,
-              language.getPrefix(),
-              TypeMessage.BROADCAST
-            );
-          });
-        })
-        .interval(intervalBroadcast)
-        .infinite()
-        .build();
+      broadcastFuture = SCHEDULER_WONDERTRADE.scheduleWithFixedDelay(() -> {
+        if (config.isDebug()) CobbleUtils.LOGGER.info(MOD_ID, "Broadcasting Pokemon stats");
+        var stats = CommandTree.calculatePokemonStats(DatabaseClientFactory.databaseClient.getAllPokemons());
+        String message = CommandTree.prepareLore(language.getMessagepoolwondertrade(), stats)
+          .replace("%total%", String.valueOf(stats.getPokemons().size()));
+        PlayerUtils.sendMessage((UUID) null, message, language.getPrefix(), TypeMessage.BROADCAST);
+      }, 10, intervalBroadcast, TimeUnit.SECONDS);
+    }
+  }
+
+  private static void shutdownScheduler() {
+    if (!SCHEDULER_WONDERTRADE.isShutdown()) {
+      SCHEDULER_WONDERTRADE.shutdownNow();
     }
   }
 }

@@ -78,10 +78,7 @@ public class CommandTree {
                   CobbleWonderTrade.MOD_ID + ".restart.pool"),
                 2))
               .executes(context -> {
-                CompletableFuture.runAsync(() -> {
-                    DatabaseClientFactory.databaseClient.restartPool();
-                  })
-                  .orTimeout(5, TimeUnit.SECONDS)
+                CompletableFuture.runAsync(() -> DatabaseClientFactory.databaseClient.restartPool(), CobbleWonderTrade.EXECUTOR_WONDERTRADE)
                   .exceptionally(e -> {
                     e.printStackTrace();
                     return null;
@@ -108,7 +105,7 @@ public class CommandTree {
                           DatabaseClientFactory.userInfoMap.put(player.getUuid(), userinfo);
                           DatabaseClientFactory.databaseClient.updateUserInfo(player, userinfo);
                         }
-                      })
+                      }, CobbleWonderTrade.EXECUTOR_WONDERTRADE)
                       .orTimeout(5, TimeUnit.SECONDS)
                       .exceptionally(e -> {
                         e.printStackTrace();
@@ -144,22 +141,27 @@ public class CommandTree {
           List<String> lore = prepareLore(CobbleWonderTrade.language.getInfo().getLore(), stats, userinfo);
 
           // Crear botón
-          GooeyButton button = itemModelInfo.getButton(1, itemModelInfo.getDisplayname(), lore,
-            action -> {
-              if (!PermissionApi.hasPermission(player, List.of(CobbleWonderTrade.MOD_ID + ".admin", CobbleWonderTrade.MOD_ID + ".info"), 2)) {
-                PlayerUtils.sendMessage(player,
-                  "You don't have permission to view this!",
-                  CobbleWonderTrade.language.getPrefix(),
-                  TypeMessage.CHAT);
-                return;
-              }
-              List<Pokemon> list;
-              switch (action.getClickType()) {
-                case RIGHT_CLICK, SHIFT_RIGHT_CLICK -> list = stats.getSpecial();
-                default -> list = stats.getPokemons();
-              }
-              CobbleWonderTrade.language.getPool().open(player, list);
-            });
+          GooeyButton button = itemModelInfo.getButton(1, itemModelInfo.getDisplayname(), lore, action -> {
+            CompletableFuture.runAsync(() -> {
+                if (!PermissionApi.hasPermission(player, List.of(CobbleWonderTrade.MOD_ID + ".admin", CobbleWonderTrade.MOD_ID + ".info"), 2)) {
+                  PlayerUtils.sendMessage(player,
+                    "You don't have permission to view this!",
+                    CobbleWonderTrade.language.getPrefix(),
+                    TypeMessage.CHAT);
+                  return;
+                }
+                List<Pokemon> list;
+                switch (action.getClickType()) {
+                  case RIGHT_CLICK, SHIFT_RIGHT_CLICK -> list = stats.getSpecial();
+                  default -> list = stats.getPokemons();
+                }
+                CobbleWonderTrade.language.getPool().open(player, list);
+              }, CobbleWonderTrade.EXECUTOR_WONDERTRADE)
+              .exceptionally(e -> {
+                e.printStackTrace();
+                return null;
+              });
+          });
           itemModelInfo.applyTemplate((ChestTemplate) template, button);
         }
         long time = System.currentTimeMillis() - currentTime;

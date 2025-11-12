@@ -54,8 +54,8 @@ public class WonderTradePoolUI {
   private static final Map<UUID, Long> cooldowns = new HashMap<>();
 
   public void open(ServerPlayerEntity player, List<Pokemon> pokemons) {
-    if (player == null || pokemons == null || pokemons.isEmpty()) return;
 
+    if (player == null || pokemons == null || pokemons.isEmpty()) return;
     long currentTime = System.currentTimeMillis();
     if (cooldowns.containsKey(player.getUuid())) {
       long lastTime = cooldowns.get(player.getUuid());

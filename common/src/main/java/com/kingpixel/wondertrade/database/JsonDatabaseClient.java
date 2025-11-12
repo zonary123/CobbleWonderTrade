@@ -11,8 +11,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Carlos Varas Alonso - 16/04/2025 18:28
@@ -40,6 +38,13 @@ public class JsonDatabaseClient extends DatabaseClient {
     if (!folder.exists()) folder.mkdirs();
     var futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH_DATA, "pool.json", call -> {
       Pool pool = Utils.newWithoutSpacingGson().fromJson(call, Pool.class);
+      if (pool == null) {
+        CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Creating new pool.json file");
+        pool = new Pool();
+        Utils.writeFileSync(Utils.getAbsolutePath(PATH_POOL), Utils.newWithoutSpacingGson().toJson(pool));
+        JsonDatabaseClient.pool = pool;
+        return;
+      }
       pool.fix();
       JsonDatabaseClient.pool = pool;
       Utils.writeFileSync(Utils.getAbsolutePath(PATH_POOL), Utils.newWithoutSpacingGson().toJson(pool));
@@ -56,24 +61,17 @@ public class JsonDatabaseClient extends DatabaseClient {
   @Override public UserInfo getUserInfo(ServerPlayerEntity player) {
     var userInfo = DatabaseClientFactory.userInfoMap.get(player.getUuid());
     if (userInfo != null) return userInfo;
-    CompletableFuture.runAsync(() -> {
-        var file = Utils.getAbsolutePath(CobbleWonderTrade.PATH_DATA_USER + player.getUuidAsString() + ".json");
-        var futureRead = Utils.readFileSync(file, call -> {
-          UserInfo readUserInfo = Utils.newWithoutSpacingGson().fromJson(call, UserInfo.class);
-          DatabaseClientFactory.userInfoMap.put(player.getUuid(), readUserInfo);
-        });
+    var file = Utils.getAbsolutePath(CobbleWonderTrade.PATH_DATA_USER + player.getUuidAsString() + ".json");
+    var futureRead = Utils.readFileSync(file, call -> {
+      UserInfo readUserInfo = Utils.newWithoutSpacingGson().fromJson(call, UserInfo.class);
+      DatabaseClientFactory.userInfoMap.put(player.getUuid(), readUserInfo);
+    });
 
-        if (!futureRead) {
-          UserInfo newUserInfo = new UserInfo(player);
-          updateUserInfo(player, newUserInfo);
-          DatabaseClientFactory.userInfoMap.put(player.getUuid(), newUserInfo);
-        }
-      })
-      .orTimeout(5, TimeUnit.SECONDS)
-      .exceptionally(e -> {
-        e.printStackTrace();
-        return null;
-      });
+    if (!futureRead) {
+      UserInfo newUserInfo = new UserInfo(player);
+      updateUserInfo(player, newUserInfo);
+      DatabaseClientFactory.userInfoMap.put(player.getUuid(), newUserInfo);
+    }
     return null;
   }
 
@@ -116,6 +114,7 @@ public class JsonDatabaseClient extends DatabaseClient {
   }
 
   @Override public void fixPool() {
+    if (pool == null) new Pool();
     pool.fix();
   }
 }
