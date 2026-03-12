@@ -1,8 +1,10 @@
 package com.kingpixel.wondertrade.database;
 
 import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.api.pokemon.labels.CobblemonPokemonLabels;
+import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
 import com.kingpixel.cobbleutils.Model.DataBaseConfig;
@@ -58,16 +60,55 @@ public class DatabaseClientFactory {
     return pokemons;
   }
 
-
   private static void applyProperties(List<Pokemon> pokemons) {
     for (int i = 0; i < pokemons.size(); i++) {
       Pokemon pokemon = pokemons.get(i);
-      if (CobbleWonderTrade.config.getLegendaryrate() > 0) {
-        int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
-        if (legendary == 0 && !pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
-          pokemons.set(i, DatabaseClientFactory.getLegendary());
+      boolean replaced = false;
+
+      // Mythical rate
+      if (CobbleWonderTrade.config.getMythicalrate() > 0) {
+        int mythical = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getMythicalrate());
+        if (mythical == 0 && !pokemon.isMythical()) {
+          Pokemon newPokemon = DatabaseClientFactory.getMythical();
+          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getMythicalperfectivs());
+          pokemons.set(i, newPokemon);
+          replaced = true;
         }
       }
+
+      // Legendary rate
+      if (!replaced && CobbleWonderTrade.config.getLegendaryrate() > 0) {
+        int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
+        if (legendary == 0 && !pokemon.isLegendary()) {
+          Pokemon newPokemon = DatabaseClientFactory.getLegendary();
+          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getLegendaryperfectivs());
+          pokemons.set(i, newPokemon);
+          replaced = true;
+        }
+      }
+
+      // Ultra Beast rate
+      if (!replaced && CobbleWonderTrade.config.getUltrabeastrate() > 0) {
+        int ultraBeast = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getUltrabeastrate());
+        if (ultraBeast == 0 && !pokemon.isUltraBeast()) {
+          Pokemon newPokemon = DatabaseClientFactory.getUltraBeast();
+          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getUltrabeastperfectivs());
+          pokemons.set(i, newPokemon);
+          replaced = true;
+        }
+      }
+
+      // Paradox rate
+      if (!replaced && CobbleWonderTrade.config.getParadoxrate() > 0) {
+        int paradox = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getParadoxrate());
+        if (paradox == 0 && !pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX)) {
+          Pokemon newPokemon = DatabaseClientFactory.getParadox();
+          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getParadoxperfectivs());
+          pokemons.set(i, newPokemon);
+        }
+      }
+
+      // Shiny rate
       if (CobbleWonderTrade.config.getShinyrate() > 0) {
         int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
         if (shiny == 0) {
@@ -77,15 +118,32 @@ public class DatabaseClientFactory {
     }
   }
 
+  public static void applyPerfectIvs(Pokemon pokemon, int count) {
+    if (count <= 0) return;
+    PokemonProperties.Companion.parse("min_perfect_ivs=" + count).apply(pokemon);
+  }
+
+  private static Pokemon getRandomByLabel(String label) {
+    List<Species> filtered = PokemonSpecies.getImplemented().stream()
+            .filter(s -> s.getLabels().contains(label))
+            .toList();
+    return filtered.get(Utils.RANDOM.nextInt(filtered.size())).create(1);
+  }
+
   public static Pokemon getLegendary() {
-    var species = PokemonSpecies.INSTANCE.getImplemented();
-    List<Species> legendaries = new ArrayList<>();
-    for (Species s : species) {
-      if (s.getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
-        legendaries.add(s);
-      }
-    }
-    return legendaries.get(Utils.RANDOM.nextInt(legendaries.size())).create(1);
+    return getRandomByLabel(CobblemonPokemonLabels.LEGENDARY);
+  }
+
+  public static Pokemon getMythical() {
+    return getRandomByLabel(CobblemonPokemonLabels.MYTHICAL);
+  }
+
+  public static Pokemon getUltraBeast() {
+    return getRandomByLabel(CobblemonPokemonLabels.ULTRA_BEAST);
+  }
+
+  public static Pokemon getParadox() {
+    return getRandomByLabel(CobblemonPokemonLabels.PARADOX);
   }
 
   public static void putLevels(List<Pokemon> pokemons) {
@@ -93,7 +151,6 @@ public class DatabaseClientFactory {
       setLevel(pokemon);
     }
   }
-
 
   public static void setLevel(Pokemon pokemon) {
     pokemon.setLevel(Utils.RANDOM.nextInt(CobbleWonderTrade.config.getMinlv(), CobbleWonderTrade.config.getMaxlv() + 1));

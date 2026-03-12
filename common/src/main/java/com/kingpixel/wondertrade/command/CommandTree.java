@@ -182,7 +182,7 @@ public class CommandTree {
   }
 
   public static PokemonStats calculatePokemonStats(List<Pokemon> pokemons) {
-    int shinys = 0, legendaries = 0, ultraBeasts = 0, paradoxes = 0, ivs31 = 0;
+    int shinys = 0, legendaries = 0, mythicals = 0, ultraBeasts = 0, paradoxes = 0, ivs31 = 0;
     List<Pokemon> special = new ArrayList<>();
 
     for (Pokemon pokemon : pokemons) {
@@ -193,6 +193,10 @@ public class CommandTree {
       }
       if (pokemon.isLegendary()) {
         legendaries++;
+        isSpecial = true;
+      }
+      if (pokemon.isMythical()) {
+        mythicals++;
         isSpecial = true;
       }
       if (pokemon.isUltraBeast()) {
@@ -212,7 +216,7 @@ public class CommandTree {
       }
     }
 
-    return new PokemonStats(shinys, legendaries, ultraBeasts, paradoxes, ivs31, special, pokemons);
+    return new PokemonStats(shinys, legendaries, mythicals, ultraBeasts, paradoxes, ivs31, special, pokemons);
   }
 
   public static List<String> prepareLore(List<String> loreTemplate, PokemonStats stats, UserInfo userinfo) {
@@ -234,6 +238,7 @@ public class CommandTree {
     return s
       .replace("%shinys%", String.valueOf(stats.shinys))
       .replace("%legends%", String.valueOf(stats.legendaries))
+      .replace("%mythicals%", String.valueOf(stats.mythicals))
       .replace("%ultrabeast%", String.valueOf(stats.ultraBeasts))
       .replace("%paradox%", String.valueOf(stats.paradoxes))
       .replace("%ivs%", String.valueOf(stats.ivs31));
@@ -270,19 +275,55 @@ public class CommandTree {
       pokemonObtained = CobbleWonderTrade.config.getFilterGenerationPokemon().generateRandomPokemon(
         CobbleWonderTrade.MOD_ID,
         "pool");
+        
+      int paradox = -1, ultraBeast = -1, legendary = -1, mythical = -1, shiny = -1;
+      if (CobbleWonderTrade.config.getParadoxrate() > 0) {
+        paradox = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getParadoxrate());
+        if (paradox == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX)) {
+          pokemonObtained = DatabaseClientFactory.getParadox();
+          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getParadoxperfectivs());
+        }
+      }
 
-      int legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
-      int shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
-      if (legendary == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
-        pokemonObtained = DatabaseClientFactory.getLegendary();
+      if (CobbleWonderTrade.config.getUltrabeastrate() > 0) {
+        ultraBeast = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getUltrabeastrate());
+        if (ultraBeast == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.ULTRA_BEAST)) {
+          pokemonObtained = DatabaseClientFactory.getUltraBeast();
+          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getUltrabeastperfectivs());
+        }
       }
-      if (shiny == 0) {
-        pokemonObtained.setShiny(true);
+
+      if (CobbleWonderTrade.config.getLegendaryrate() > 0) {
+        legendary = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getLegendaryrate());
+        if (legendary == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
+          pokemonObtained = DatabaseClientFactory.getLegendary();
+          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getLegendaryperfectivs());
+        }
       }
+
+      if (CobbleWonderTrade.config.getMythicalrate() > 0) {
+        mythical = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getMythicalrate());
+        if (mythical == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.MYTHICAL)) {
+          pokemonObtained = DatabaseClientFactory.getMythical();
+          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getMythicalperfectivs());
+        }
+      }
+
+      if (CobbleWonderTrade.config.getShinyrate() > 0) {
+        shiny = Utils.RANDOM.nextInt(CobbleWonderTrade.config.getShinyrate());
+        if (shiny == 0) {
+          pokemonObtained.setShiny(true);
+        }
+      }
+
       if (CobbleWonderTrade.config.isDebug()) {
+        CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Paradox: " + paradox);
+        CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Ultra Beast: " + ultraBeast);
         CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Legendary: " + legendary);
+        CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Mythical: " + mythical);
         CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Shiny: " + shiny);
       }
+
       DatabaseClientFactory.setLevel(pokemonObtained);
     }
     updatePlayerStorage(player, pokemon, pokemonObtained);
@@ -380,14 +421,14 @@ public class CommandTree {
   // Clase auxiliar para estadísticas de Pokémon
   @Data
   public static class PokemonStats {
-    int shinys, legendaries, ultraBeasts, paradoxes, ivs31;
+    int shinys, legendaries, mythicals, ultraBeasts, paradoxes, ivs31;
     private List<Pokemon> special;
     private List<Pokemon> pokemons;
 
-    public PokemonStats(int shinys, int legendaries, int ultraBeasts, int paradoxes, int ivs31, List<Pokemon> special
-      , List<Pokemon> pokemons) {
+    public PokemonStats(int shinys, int legendaries, int mythicals, int ultraBeasts, int paradoxes, int ivs31, List<Pokemon> special, List<Pokemon> pokemons) {
       this.shinys = shinys;
       this.legendaries = legendaries;
+      this.mythicals = mythicals;
       this.ultraBeasts = ultraBeasts;
       this.paradoxes = paradoxes;
       this.ivs31 = ivs31;
