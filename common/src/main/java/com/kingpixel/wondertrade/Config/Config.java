@@ -34,7 +34,14 @@ public class Config {
   private int maxlv;
   private boolean poolview;
   private int shinyrate;
+  private int mythicalrate;
+  private int mythicalperfectivs;
   private int legendaryrate;
+  private int legendaryperfectivs;
+  private int ultrabeastrate;
+  private int ultrabeastperfectivs;
+  private int paradoxrate;
+  private int paradoxperfectivs;
   private boolean israndom;
   private int cooldown;
   private Map<String, Integer> cooldownPermission;
@@ -60,7 +67,14 @@ public class Config {
     minlv = 5;
     maxlv = 36;
     shinyrate = 8192;
+    mythicalrate = 16512;
+    mythicalperfectivs = 3;
     legendaryrate = 16512;
+    legendaryperfectivs = 3;
+    ultrabeastrate = 512;
+    ultrabeastperfectivs = 2;
+    paradoxrate = 256;
+    paradoxperfectivs = 2;
     poolview = true;
     israndom = false;
     cooldownPermission = Map.of(
