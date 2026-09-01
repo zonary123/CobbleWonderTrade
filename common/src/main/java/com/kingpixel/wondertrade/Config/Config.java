@@ -2,7 +2,11 @@ package com.kingpixel.wondertrade.Config;
 
 import com.cobblemon.mod.common.api.pokemon.labels.CobblemonPokemonLabels;
 import com.google.gson.Gson;
-import com.kingpixel.cobbleutils.Model.*;
+import com.kingpixel.cobbleutils.Model.Animations.core.Animations;
+import com.kingpixel.cobbleutils.Model.DataBaseConfig;
+import com.kingpixel.cobbleutils.Model.FilterPokemons;
+import com.kingpixel.cobbleutils.Model.PokemonBlackList;
+import com.kingpixel.cobbleutils.Model.WebHookData;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
@@ -20,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 public class Config {
   private boolean debug;
   private String lang;
-  private AdvancedItemChance.Animations animation;
+  private Animations animation;
   private boolean autoReset;
   private int cooldownReset;
   private List<String> commands;
@@ -54,7 +58,7 @@ public class Config {
   public Config() {
     debug = false;
     lang = "en";
-    animation = AdvancedItemChance.Animations.CSGO;
+    animation = Animations.CSGO;
     autoReset = false;
     cooldownReset = 30;
     discord_webhook = new WebHookData("", "", "");
