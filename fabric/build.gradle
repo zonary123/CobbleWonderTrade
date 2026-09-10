@@ -31,18 +31,18 @@ dependencies {
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric"))
 
     // Database
-    shadowCommon("org.mongodb:mongodb-driver-sync:${property("mongodb_version")}")
-    shadowCommon("org.xerial:sqlite-jdbc:${property("sqlite_version")}")
-    shadowCommon("com.zaxxer:HikariCP:${property("hikaricp_version")}")
+    implementation("org.mongodb:mongodb-driver-sync:${property("mongodb_version")}")
+    implementation("org.xerial:sqlite-jdbc:${property("sqlite_version")}")
+    implementation("com.zaxxer:HikariCP:${property("hikaricp_version")}")
 
     // Kyori Adventure
-    shadowCommon("net.kyori:adventure-text-serializer-gson:${property("kyori_version")}")
-    shadowCommon("net.kyori:adventure-text-minimessage:${property("kyori_version")}")
-    shadowCommon("net.kyori:adventure-api:${property("kyori_version")}")
+    implementation("net.kyori:adventure-text-serializer-gson:${property("kyori_version")}")
+    implementation("net.kyori:adventure-text-minimessage:${property("kyori_version")}")
+    implementation("net.kyori:adventure-api:${property("kyori_version")}")
 
     // Discord
-    shadowCommon("club.minnced:discord-webhooks:${property("discord_webhooks_version")}")
-    shadowCommon("net.objecthunter:exp4j:0.4.8")
+    implementation("club.minnced:discord-webhooks:${property("discord_webhooks_version")}")
+    implementation("net.objecthunter:exp4j:0.4.8")
 }
 
 processResources {
