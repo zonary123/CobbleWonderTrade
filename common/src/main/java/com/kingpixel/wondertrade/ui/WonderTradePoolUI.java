@@ -19,7 +19,7 @@ import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.cobbleutils.util.PokemonUtils;
 import com.kingpixel.cobbleutils.util.TypeMessage;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.command.CommandTree;
+import com.kingpixel.wondertrade.command.utils.WonderTradeUtils;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.component.DataComponentTypes;
@@ -112,7 +112,7 @@ public class WonderTradePoolUI {
       .linkType(LinkType.Next)
       .build());
 
-    close.applyTemplate(template, close.getButton(action -> CommandTree.open(action.getPlayer())));
+    close.applyTemplate(template, close.getButton(action -> WonderTradeUtils.open(action.getPlayer())));
 
     var builder = LinkedPage.builder()
       .title(AdventureTranslator.toNative(title));
