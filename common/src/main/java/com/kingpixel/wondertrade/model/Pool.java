@@ -4,50 +4,56 @@ import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Carlos Varas Alonso - 16/04/2025 19:04
+ * In-memory and serialized pool model for WonderTrade.
+ *
+ * @author Carlos Varas Alonso
  */
-@Data
+@Getter
+@Setter
 public class Pool {
   private Long cooldown;
   private List<Pokemon> pokemons;
 
   public Pool() {
-    this.cooldown = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldownReset());
-    this.pokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
+    this.cooldown = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getPool().getCooldownReset());
+    this.pokemons = new ArrayList<>(DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getPool().getSizePool(), 0));
   }
 
-  public void fix() {
+  public synchronized void fix() {
     if (this.pokemons == null) {
-      this.pokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getSizePool(), 0);
+      this.pokemons = new ArrayList<>(DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getPool().getSizePool(), 0));
     } else {
-      pokemons.removeIf(pokemon -> pokemon == null || CobbleWonderTrade.config.getBlackList().isBlackListed(pokemon));
-      int sizePool = CobbleWonderTrade.config.getSizePool();
+      this.pokemons = new ArrayList<>(this.pokemons);
+      pokemons.removeIf(pokemon -> pokemon == null || CobbleWonderTrade.config.getPool().getBlackList().isBlackListed(pokemon));
+      int sizePool = CobbleWonderTrade.config.getPool().getSizePool();
       if (pokemons.size() > sizePool) {
-        this.pokemons = this.pokemons.subList(0, sizePool);
+        this.pokemons = new ArrayList<>(this.pokemons.subList(0, sizePool));
       } else if (pokemons.size() < sizePool) {
-        // Generar nuevos elementos para completar el tamaño
         List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(sizePool, this.pokemons.size());
         this.pokemons.addAll(newPokemons);
       }
     }
   }
 
-  public Pokemon tradePokemon(Pokemon pokemon) {
+  public synchronized Pokemon tradePokemon(Pokemon pokemon) {
     if (this.pokemons == null || this.pokemons.isEmpty()) fix();
-    var trade = this.pokemons.remove(Utils.getRandom().nextInt(this.pokemons.size()));
+    int index = Utils.getRandom().nextInt(this.pokemons.size());
+    Pokemon trade = this.pokemons.remove(index);
     this.pokemons.add(pokemon);
     return trade;
   }
 
-  public List<Pokemon> getPokemonsAnimation() {
+  public synchronized List<Pokemon> getPokemonsAnimation() {
     if (this.pokemons == null || this.pokemons.isEmpty()) return List.of();
-    return Utils.RANDOM.ints(0, pokemons.size())
+    return Utils.getRandom().ints(0, pokemons.size())
       .distinct()
       .limit(DatabaseClientFactory.POKEMON_ANIMATION_SIZE)
       .mapToObj(pokemons::get)
@@ -55,10 +61,11 @@ public class Pool {
   }
 
   public boolean hasCooldown() {
-    if (!CobbleWonderTrade.config.isAutoReset()) return true;
+    if (!CobbleWonderTrade.config.getPool().isAutoReset()) return true;
     boolean hasCooldown = this.cooldown != null && this.cooldown > System.currentTimeMillis();
-    if (!hasCooldown)
-      setCooldown(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getCooldownReset()));
+    if (!hasCooldown) {
+      setCooldown(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getPool().getCooldownReset()));
+    }
     return hasCooldown;
   }
 }

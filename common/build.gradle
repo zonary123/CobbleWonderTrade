@@ -1,0 +1,39 @@
+architectury {
+    common("fabric")
+}
+
+dependencies {
+    modImplementation("com.cobblemon:fabric:${property("cobblemon_version")}")
+    modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
+
+    modImplementation("dev.architectury:architectury:${property("architectury_version")}")
+    modImplementation("ca.landonjw.gooeylibs:fabric-api-repack:${property("gooeylibs_version")}")
+
+    modImplementation(fileTree(dir: "libs", include: ["*.jar"]))
+
+    // Database
+    implementation("org.mongodb:mongodb-driver-sync:${property("mongodb_version")}")
+    implementation("org.xerial:sqlite-jdbc:${property("sqlite_version")}")
+    implementation("com.zaxxer:HikariCP:${property("hikaricp_version")}")
+
+    // Kyori Adventure
+    api("net.kyori:adventure-text-serializer-gson:${property("kyori_version")}")
+    api("net.kyori:adventure-text-minimessage:${property("kyori_version")}")
+    api("net.kyori:adventure-api:${property("kyori_version")}")
+
+    // Lombok
+    compileOnly("org.projectlombok:lombok:${property("lombok_version")}")
+    annotationProcessor("org.projectlombok:lombok:${property("lombok_version")}")
+
+    // Discord
+    api("club.minnced:discord-webhooks:${property("discord_webhooks_version")}")
+
+    // Calculator API
+    api("net.objecthunter:exp4j:0.4.8")
+
+    // Permissions & Economy
+    api("net.luckperms:api:${property("luckperms_version")}")
+    api("org.spigotmc:spigot-api:${property("spigot_version")}")
+    api("com.github.MilkBowl:VaultAPI:${property("vault_api_version")}")
+}

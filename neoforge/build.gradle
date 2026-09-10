@@ -1,0 +1,91 @@
+plugins {
+    id "com.gradleup.shadow" version "8.3.5"
+}
+
+architectury {
+    platformSetupLoomIde()
+    neoForge()
+}
+
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentNeoForge.extendsFrom common
+    shadowCommon.canBeResolved = true
+    shadowCommon.canBeConsumed = false
+}
+
+dependencies {
+    neoForge("net.neoforged:neoforge:${property("neoforge_version")}")
+    modImplementation("dev.architectury:architectury-neoforge:${property("architectury_version")}")
+    modImplementation("com.cobblemon:neoforge:${property("cobblemon_version")}")
+
+    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge"))
+
+    // Kyori Adventure
+    shadowCommon("net.kyori:adventure-text-serializer-gson:${property("kyori_version")}")
+    shadowCommon("net.kyori:adventure-text-minimessage:${property("kyori_version")}")
+
+    // Database
+    shadowCommon("org.mongodb:mongodb-driver-sync:${property("mongodb_version")}")
+    shadowCommon("org.xerial:sqlite-jdbc:${property("sqlite_version")}")
+    shadowCommon("com.zaxxer:HikariCP:${property("hikaricp_version")}")
+
+    // Economy Vault
+    shadowCommon("com.github.MilkBowl:VaultAPI:${property("vault_api_version")}")
+
+    // Discord & Calculator
+    shadowCommon("club.minnced:discord-webhooks:${property("discord_webhooks_version")}")
+    shadowCommon("net.objecthunter:exp4j:0.4.8")
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand Map.of(
+                "mod_name", project.property("mod_name"),
+                "mod_id", project.property("mod_id"),
+                "mod_version", project.property("mod_version"),
+                "mod_description", project.property("mod_description"),
+                "author", project.property("author"),
+                "repository", project.property("repository"),
+                "license", project.property("license"),
+                "mod_icon", project.property("mod_icon"),
+                "environment", project.property("environment"),
+                "supported_minecraft_versions", project.property("supported_minecraft_versions")
+        )
+    }
+}
+
+shadowJar {
+    exclude("architectury.common.json")
+    exclude("com/google/gson/**/*")
+    exclude("org/intellij/**/*")
+    exclude("org/jetbrains/**/*")
+    exclude("org/bukkit/**/*")
+    exclude("org/apache/**/*")
+    exclude("org/yaml/**/*")
+    exclude("org/junit/**/*")
+    exclude("org/java_websocket/**/*")
+    exclude("org/hamcrest/**/*")
+    exclude("com/google/**/*")
+    exclude("org/slf4j/**")
+
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier = "dev-shadow"
+}
+
+remapJar {
+    injectAccessWidener = true
+    inputFile.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+jar {
+    archiveClassifier = "dev"
+}

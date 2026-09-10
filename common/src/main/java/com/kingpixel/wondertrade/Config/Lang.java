@@ -1,23 +1,26 @@
 package com.kingpixel.wondertrade.Config;
 
-import com.google.gson.Gson;
-import com.kingpixel.cobbleutils.CobbleUtils;
 import com.kingpixel.cobbleutils.Model.ItemModel;
 import com.kingpixel.cobbleutils.Model.discord.WebHookStruct;
 import com.kingpixel.cobbleutils.ui.ConfirmMenu;
 import com.kingpixel.cobbleutils.ui.PartyPcMenu;
-import com.kingpixel.cobbleutils.util.Utils;
+import com.kingpixel.cobbleutils.util.UtilsFile;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.ui.WonderTradePoolUI;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
- * @author Carlos Varas Alonso - 28/04/2024 23:58
+ * Localization configuration for UltraWonderTrade.
+ *
+ * @author Carlos Varas Alonso
  */
-@Data
+@Getter
+@Setter
 public class Lang {
   private String prefix;
   private String reload;
@@ -28,6 +31,8 @@ public class Lang {
   private String messagewondertradecooldown;
   private String messagePokemonToWondertrade;
   private String messageThePokemonNotHaveMinLevel;
+  private String noPermission;
+  private String clickingTooFast;
   private ItemModel info;
   private WebHookStruct webHookPutPool;
   private WebHookStruct webHookObtainedPool;
@@ -38,19 +43,20 @@ public class Lang {
   private WonderTradePoolUI pool;
 
   public Lang() {
-    prefix = "&8[<gradient:#ff7900:#ffdbba>WonderTrade&8] ";
-    reload = "%prefix% <#64de7c>Reloaded!";
-    titlepool = "&6WonderTrade Pool";
-    messagepoolwondertrade = "%prefix% <#64de7c>There are currently &e%total% <#d65549>pokemons <#64de7c>in the WonderTrade pool! \n" +
-      "%prefix% " +
-      "<#64de7c>Use " +
-      "&6/wt <#64de7c>to trade a pokemon! \nThere are &6%shinys% &eshinys <#64de7c>and &6%legends% &dlegendaries!";
-    messagewondertradeready = "%prefix% <#64de7c>WonderTrade is ready!";
-    messagewondertraderecieved = "%prefix% <#64de7c>You have received a &6%pokemon% %gender% &f(&b%form%&f) %shiny%<#64de7c>!";
-    messagePokemonToWondertrade = "%prefix% <#64de7c>The player &6%player% <#64de7c>has introduced &6%pokemon% %gender% &f(&b%form%&f) %shiny%";
-    messageThePokemonNotHaveMinLevel = "%prefix% <#d65549>The pokemon &6%pokemon% %gender% &f(&b%form%&f) %shiny% <#d65549>doesn't have the minimum level <#ebab34>%minlevel%<#d65549>!";
+    this.prefix = "&8[<gradient:#ff7900:#ffdbba>UltraWonderTrade&8] ";
+    this.reload = "%prefix% <#64de7c>Reloaded!";
+    this.titlepool = "&6UltraWonderTrade Pool";
+    this.messagepoolwondertrade = "%prefix% <#64de7c>There are currently &e%total% <#d65549>pokemons <#64de7c>in the UltraWonderTrade pool! \n" +
+      "%prefix% <#64de7c>Use &6/wt <#64de7c>to trade a pokemon! \nThere are &6%shinys% &eshinys <#64de7c>and &6%legends% &dlegendaries!";
+    this.messagewondertradeready = "%prefix% <#64de7c>UltraWonderTrade is ready!";
+    this.messagewondertraderecieved = "%prefix% <#64de7c>You have received a &6%pokemon% %gender% &f(&b%form%&f) %shiny%<#64de7c>!";
+    this.messagePokemonToWondertrade = "%prefix% <#64de7c>The player &6%player% <#64de7c>has introduced &6%pokemon% %gender% &f(&b%form%&f) %shiny%";
+    this.messageThePokemonNotHaveMinLevel = "%prefix% <#d65549>The pokemon &6%pokemon% %gender% &f(&b%form%&f) %shiny% <#d65549>doesn't have the minimum level <#ebab34>%minlevel%<#d65549>!";
+    this.noPermission = "%prefix% <#d65549>You don't have permission to perform this action!";
+    this.clickingTooFast = "%prefix% <#d65549>You are clicking too fast!";
+    this.messagewondertradecooldown = "%prefix% <#d65549>You must wait before trading again %time%!";
 
-    info = new ItemModel("minecraft:book", "<gradient:#ff7900:#ffdbba>Info WonderTrade", List.of(
+    this.info = new ItemModel("minecraft:book", "<gradient:#ff7900:#ffdbba>Info UltraWonderTrade", List.of(
       "",
       "<#ecca18>Shinys: &f%shinys%",
       "<#ab8fdb>Legendaries: &f%legends%",
@@ -59,11 +65,11 @@ public class Lang {
       "<#d65549>IVs 31: &f%ivs%",
       "<#3492eb>Cooldown: %time%",
       "",
-      "<#ebab34>⏺ &7Left click to open the WonderTrade pool view.",
-      "<#ebab34>⏺ &7Right click to open the WonderTrade pool especial view."
+      "<#ebab34>⏺ &7Left click to open the UltraWonderTrade pool view.",
+      "<#ebab34>⏺ &7Right click to open the UltraWonderTrade pool especial view."
     ));
-    info.setSlot(4);
-    messagewondertradecooldown = "%prefix% <#d65549>You must wait before trading again %time%!";
+    this.info.setSlot(4);
+
     StringBuilder defaultStruct = new StringBuilder();
     defaultStruct.append(" - Level: %level%\n");
     defaultStruct.append(" - Gender: %gender%\n");
@@ -80,66 +86,58 @@ public class Lang {
     defaultStruct.append(" - Ball: %ball%\n");
     defaultStruct.append(" - Moves: %move1% | %move2% | %move3% | %move4%\n");
     defaultStruct.append(" - Owner: %owner%\n");
-    webHookPutPool = new WebHookStruct();
-    var embed = webHookPutPool.getEmbeds().getFirst();
+
+    this.webHookPutPool = new WebHookStruct();
+    var embed = this.webHookPutPool.getEmbeds().getFirst();
     embed.setColor("f3ac67");
-    embed.setTitle("WonderTrade Pool | Put");
+    embed.setTitle("UltraWonderTrade Pool | Put");
     StringBuilder descriptionPut = new StringBuilder();
     descriptionPut.append("Pokemon put by %player%\n");
     embed.setDescription(descriptionPut.append(defaultStruct).toString());
-    webHookObtainedPool = new WebHookStruct();
-    embed = webHookObtainedPool.getEmbeds().getFirst();
+
+    this.webHookObtainedPool = new WebHookStruct();
+    embed = this.webHookObtainedPool.getEmbeds().getFirst();
     embed.setColor("5abad9");
-    embed.setTitle("WonderTrade Pool | Obtained");
+    embed.setTitle("UltraWonderTrade Pool | Obtained");
     StringBuilder descriptionObtained = new StringBuilder();
     descriptionObtained.append("Pokemon obtained by %player%\n");
     embed.setDescription(descriptionObtained.append(defaultStruct).toString());
-    webHookSpecialPutPool = new WebHookStruct();
-    embed = webHookSpecialPutPool.getEmbeds().getFirst();
+
+    this.webHookSpecialPutPool = new WebHookStruct();
+    embed = this.webHookSpecialPutPool.getEmbeds().getFirst();
     embed.setColor("c3b0f6");
-    embed.setTitle("WonderTrade Pool | Special Put");
+    embed.setTitle("UltraWonderTrade Pool | Special Put");
     StringBuilder descriptionSpecialPut = new StringBuilder();
     descriptionSpecialPut.append("Special Pokemon put by %player%\n");
     embed.setDescription(descriptionSpecialPut.append(defaultStruct).toString());
-    webHookSpecialObtainedPool = new WebHookStruct();
-    embed = webHookSpecialObtainedPool.getEmbeds().getFirst();
+
+    this.webHookSpecialObtainedPool = new WebHookStruct();
+    embed = this.webHookSpecialObtainedPool.getEmbeds().getFirst();
     embed.setColor("c3b0f6");
-    embed.setTitle("WonderTrade Pool | Special Obtained");
+    embed.setTitle("UltraWonderTrade Pool | Special Obtained");
     StringBuilder descriptionSpecialObtained = new StringBuilder();
     descriptionSpecialObtained.append("Special Pokemon obtained by %player%\n");
     embed.setDescription(descriptionSpecialObtained.append(defaultStruct).toString());
 
-    partyPcMenu = new PartyPcMenu();
-    confirmMenu = new ConfirmMenu();
-    pool = new WonderTradePoolUI();
+    this.partyPcMenu = new PartyPcMenu();
+    this.confirmMenu = new ConfirmMenu();
+    this.pool = new WonderTradePoolUI();
   }
-
 
   public void init() {
-    CompletableFuture<Boolean> futureRead = Utils.readFileAsync(CobbleWonderTrade.PATH + "lang/",
-      CobbleWonderTrade.config.getLang() + ".json",
-      el -> {
-        Gson gson = Utils.newGson();
-        CobbleWonderTrade.language = gson.fromJson(el, Lang.class);
-        String data = gson.toJson(CobbleWonderTrade.language);
-        CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",
-          data);
-        if (!futureWrite.join()) {
-          CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Error writing lang file");
-        }
-      });
-
-    if (!futureRead.join()) {
-      Gson gson = Utils.newGson();
-      CobbleWonderTrade.language = this;
-      String data = gson.toJson(CobbleWonderTrade.language);
-      CompletableFuture<Boolean> futureWrite = Utils.writeFileAsync(CobbleWonderTrade.PATH + "lang/", CobbleWonderTrade.config.getLang() + ".json",
-        data);
-
-      if (!futureWrite.join()) {
-        CobbleUtils.LOGGER.info(CobbleWonderTrade.MOD_ID, "Error writing lang file");
+    String langName = CobbleWonderTrade.config != null ? CobbleWonderTrade.config.getLang() : "en";
+    Path langPath = Path.of(CobbleWonderTrade.PATH, "lang", langName + ".json");
+    try {
+      Lang loaded = UtilsFile.readOrCreate(langPath, Lang.class, Lang::new);
+      if (loaded != null) {
+        CobbleWonderTrade.language = loaded;
+      } else {
+        CobbleWonderTrade.language = this;
       }
+      UtilsFile.write(langPath, CobbleWonderTrade.language);
+    } catch (IOException e) {
+      CobbleWonderTrade.LOGGER.error("Failed to load or save language file: " + langPath, e);
+      CobbleWonderTrade.language = this;
     }
   }
-
 }

@@ -3,21 +3,18 @@ package com.kingpixel.wondertrade.model;
 import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.NoArgsConstructor;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
- * @author Carlos Varas Alonso - 25/07/2024 1:10
+ * User data representation for WonderTrade player state and cooldowns.
+ *
+ * @author Carlos Varas Alonso
  */
-@Getter
-@Setter
 @Data
-@ToString
+@NoArgsConstructor
 public class UserInfo {
   private UUID playeruuid;
   private boolean messagesend;
@@ -30,12 +27,11 @@ public class UserInfo {
   }
 
   public void setCooldown(ServerPlayerEntity player) {
-    this.date = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(
-      PlayerUtils.getCooldown(
-        CobbleWonderTrade.config.getCooldownPermission(),
-        CobbleWonderTrade.config.getCooldown(),
-        player
-      )
+    this.messagesend = false;
+    this.date = System.currentTimeMillis() + PlayerUtils.getCooldown(
+      CobbleWonderTrade.config.getCooldowns().getCooldownPermission(),
+      CobbleWonderTrade.config.getCooldowns().getCooldown(),
+      player
     );
   }
 

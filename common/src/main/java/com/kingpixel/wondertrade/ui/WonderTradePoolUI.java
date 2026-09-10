@@ -15,17 +15,30 @@ import com.kingpixel.cobbleutils.Model.ItemModel;
 import com.kingpixel.cobbleutils.Model.PanelsConfig;
 import com.kingpixel.cobbleutils.Model.Rectangle;
 import com.kingpixel.cobbleutils.util.AdventureTranslator;
+import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.cobbleutils.util.PokemonUtils;
+import com.kingpixel.cobbleutils.util.TypeMessage;
+import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.command.CommandTree;
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
 import net.minecraft.server.network.ServerPlayerEntity;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @author Carlos Varas Alonso - 16/04/2025 20:51
+ * Graphical User Interface for displaying Pokémon pool in WonderTrade.
+ *
+ * @author Carlos Varas Alonso
  */
+@Getter
+@Setter
 public class WonderTradePoolUI {
   private int rows;
   private String title;
@@ -35,66 +48,70 @@ public class WonderTradePoolUI {
   private ItemModel next;
   private List<PanelsConfig> panels;
 
-  public WonderTradePoolUI() {
-    this.rows = 6;
-    this.title = "Wonder Trade Pool";
-    this.rectangle = new Rectangle(rows);
-    this.previous = new ItemModel("minecraft:arrow", "&cPrevious");
-    previous.setSlot(45);
-    this.close = new ItemModel("minecraft:barrier", "&cClose");
-    close.setSlot(49);
-    this.next = new ItemModel("minecraft:arrow", "&cNext");
-    next.setSlot(53);
-    this.panels = List.of(
-      new PanelsConfig(rows)
-    );
+  private static final int COOLDOWN_MS = 250;
+  private static final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();
+
+  public static void removePlayer(UUID playerUuid) {
+    if (playerUuid != null) {
+      cooldowns.remove(playerUuid);
+    }
   }
 
-  private static final int COOLDOWN_MS = 250;
-  private static final Map<UUID, Long> cooldowns = new HashMap<>();
+  public WonderTradePoolUI() {
+    this.rows = 6;
+    this.title = "&6UltraWonderTrade Pool";
+    this.rectangle = new Rectangle(rows);
+    this.previous = new ItemModel("minecraft:arrow", "&cPrevious");
+    this.previous.setSlot(45);
+    this.close = new ItemModel("minecraft:barrier", "&cClose");
+    this.close.setSlot(49);
+    this.next = new ItemModel("minecraft:arrow", "&cNext");
+    this.next.setSlot(53);
+    this.panels = List.of(new PanelsConfig(rows));
+  }
 
   public void open(ServerPlayerEntity player, List<Pokemon> pokemons) {
-
     if (player == null || pokemons == null || pokemons.isEmpty()) return;
-    long currentTime = System.currentTimeMillis();
-    if (cooldowns.containsKey(player.getUuid())) {
-      long lastTime = cooldowns.get(player.getUuid());
-      if (currentTime - lastTime < COOLDOWN_MS) {
-        player.sendMessage(AdventureTranslator.toNative("You are clicking too fast!"));
-        return;
-      }
-    } else {
-      cooldowns.put(player.getUuid(), currentTime);
-    }
-    var template = ChestTemplate
-      .builder(rows)
-      .build();
 
+    long currentTime = System.currentTimeMillis();
+    Long lastTime = cooldowns.get(player.getUuid());
+    if (lastTime != null && currentTime - lastTime < COOLDOWN_MS) {
+      PlayerUtils.sendMessage(
+        player,
+        CobbleWonderTrade.language.getClickingTooFast(),
+        CobbleWonderTrade.language.getPrefix(),
+        TypeMessage.CHAT
+      );
+      return;
+    }
+    cooldowns.put(player.getUuid(), currentTime);
+
+    var template = ChestTemplate.builder(rows).build();
     PanelsConfig.applyConfig(template, panels);
     rectangle.apply(template);
 
     List<Button> buttons = new ArrayList<>();
-
     for (Pokemon pokemon : pokemons) {
       GooeyButton button = GooeyButton.builder()
         .display(PokemonItem.from(pokemon))
         .with(DataComponentTypes.CUSTOM_NAME, AdventureTranslator.toNative(PokemonUtils.replace(pokemon)))
         .with(DataComponentTypes.LORE, new LoreComponent(
-          AdventureTranslator.toNativeL(
-            PokemonUtils.replaceLore(pokemon)
-          )
+          AdventureTranslator.toNativeL(PokemonUtils.replaceLore(pokemon))
         ))
         .build();
       buttons.add(button);
     }
+
     previous.applyTemplate(template, LinkedPageButton.builder()
       .display(previous.getItemStack())
       .linkType(LinkType.Previous)
       .build());
+
     next.applyTemplate(template, LinkedPageButton.builder()
       .display(next.getItemStack())
       .linkType(LinkType.Next)
       .build());
+
     close.applyTemplate(template, close.getButton(action -> CommandTree.open(action.getPlayer())));
 
     var builder = LinkedPage.builder()

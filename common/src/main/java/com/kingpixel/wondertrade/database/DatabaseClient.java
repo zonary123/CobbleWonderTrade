@@ -22,8 +22,8 @@ public abstract class DatabaseClient {
   public abstract void fixPool();
 
   public boolean shouldRestartPool() {
-    return CobbleWonderTrade.config.isAutoReset() && !CobbleWonderTrade.config.isIsrandom()
-      && CobbleWonderTrade.config.getCooldownReset() > 0;
+    return CobbleWonderTrade.config.getPool().isAutoReset() && !CobbleWonderTrade.config.getPool().isIsrandom()
+      && CobbleWonderTrade.config.getPool().getCooldownReset() > 0;
   }
 
   public abstract void restartPool();
@@ -31,7 +31,6 @@ public abstract class DatabaseClient {
   public abstract Pokemon tradePokemon(ServerPlayerEntity player, Pokemon pokemon);
 
   public abstract List<Pokemon> getPokemonsAnimation();
-
 
   public void removeIfNecessary(ServerPlayerEntity player) {
     DatabaseClientFactory.userInfoMap.remove(player.getUuid());
