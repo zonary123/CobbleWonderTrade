@@ -21,7 +21,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -137,11 +136,12 @@ public class CobbleWonderTrade {
     // Broadcast task
     if (config.getCooldowns().getCooldownBroadcast() > 0) {
       broadcastFuture = ASYNC.scheduleAtFixedRateWithFuture(() -> {
+        if (server == null) return;
         if (config.isDebug()) LOGGER.info("Broadcasting WonderTrade stats");
         var stats = CommandTree.getPokemonStats();
         String message = CommandTree.prepareLore(language.getMessagepoolwondertrade(), stats)
           .replace("%total%", String.valueOf(stats.getPokemons().size()));
-        PlayerUtils.sendMessage((UUID) null, message, language.getPrefix(), TypeMessage.BROADCAST);
+        PlayerUtils.broadcast(message, language.getPrefix());
       }, 10, intervalBroadcast, TimeUnit.SECONDS);
     }
   }
