@@ -1,10 +1,13 @@
-package com.kingpixel.wondertrade.database;
+package com.kingpixel.wondertrade.database.sql;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.Model.DataBaseConfig;
 import com.kingpixel.cobbleutils.util.UtilsFile;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.command.CommandTree;
+import com.kingpixel.wondertrade.database.DatabaseClient;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import com.kingpixel.wondertrade.database.sql.dialect.SqlDialect;
 import com.kingpixel.wondertrade.model.UserInfo;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -20,60 +23,52 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * MySQL database client implementation using HikariCP connection pooling.
+ * Universal SQL database client leveraging HikariCP connection pooling and pluggable SqlDialect strategy.
  *
  * @author Carlos Varas Alonso
  */
-public class MySQLDatabaseClient extends DatabaseClient {
-  private final HikariDataSource dataSource;
+public class SqlDatabaseClient extends DatabaseClient {
+  protected final SqlDialect dialect;
+  protected final HikariDataSource dataSource;
 
-  public MySQLDatabaseClient(DataBaseConfig config) {
+  public SqlDatabaseClient(DataBaseConfig config, SqlDialect dialect) {
+    this.dialect = dialect;
     try {
-      HikariConfig hikariConfig = new HikariConfig();
-      hikariConfig.setJdbcUrl(config.getUrl());
-      hikariConfig.setUsername(config.getUser());
-      hikariConfig.setPassword(config.getPassword());
-      hikariConfig.setMaximumPoolSize(10);
-      hikariConfig.setMinimumIdle(2);
-      hikariConfig.setIdleTimeout(TimeUnit.MINUTES.toMillis(10));
-      hikariConfig.setMaxLifetime(TimeUnit.MINUTES.toMillis(30));
-      hikariConfig.setConnectionTimeout(TimeUnit.SECONDS.toMillis(10));
-      hikariConfig.setPoolName("UltraWondertrade-HikariPool");
-      hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
-      hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
-      hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-      hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
+      HikariConfig hikariConfig = dialect.createHikariConfig(config);
       this.dataSource = new HikariDataSource(hikariConfig);
-      CobbleWonderTrade.LOGGER.info("HikariCP connection pool initialized for MySQL.");
+      CobbleWonderTrade.LOGGER.info("HikariCP initialized for SQL database (" + dialect.getClass().getSimpleName() + ")");
     } catch (Exception e) {
-      throw new RuntimeException("Failed to initialize HikariCP for MySQL database", e);
+      throw new RuntimeException("Failed to initialize HikariCP connection pool for SQL database", e);
     }
   }
 
   @Override
   public void connect() {
-    CobbleWonderTrade.LOGGER.info("Connecting to MySQL Database");
+    CobbleWonderTrade.LOGGER.info("Connecting to SQL Database (" + dialect.getClass().getSimpleName() + ")");
     createTables();
     fixPool();
   }
 
   @Override
   public void disconnect() {
-    CobbleWonderTrade.LOGGER.info("Disconnecting from MySQL Database");
+    CobbleWonderTrade.LOGGER.info("Disconnecting from SQL Database (" + dialect.getClass().getSimpleName() + ")");
     if (dataSource != null && !dataSource.isClosed()) {
       dataSource.close();
       CobbleWonderTrade.LOGGER.info("HikariCP connection pool closed.");
     }
   }
 
-  private void createTables() {
+  protected void createTables() {
     try (Connection connection = dataSource.getConnection();
          Statement statement = connection.createStatement()) {
-      statement.executeUpdate("CREATE TABLE IF NOT EXISTS pokemons (id INT AUTO_INCREMENT PRIMARY KEY, data LONGTEXT)");
-      statement.executeUpdate("CREATE TABLE IF NOT EXISTS user_info (uuid VARCHAR(36) PRIMARY KEY, data LONGTEXT)");
-      statement.executeUpdate("CREATE TABLE IF NOT EXISTS restart_info (id INT PRIMARY KEY, restart_at BIGINT)");
+      for (String initQuery : dialect.getInitQueries()) {
+        statement.execute(initQuery);
+      }
+      for (String tableQuery : dialect.getCreateTablesQueries()) {
+        statement.executeUpdate(tableQuery);
+      }
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error creating MySQL tables", e);
+      CobbleWonderTrade.LOGGER.error("Error creating SQL tables", e);
     }
   }
 
@@ -86,18 +81,18 @@ public class MySQLDatabaseClient extends DatabaseClient {
     try (Connection connection = dataSource.getConnection();
          PreparedStatement statement = connection.prepareStatement("SELECT data FROM user_info WHERE uuid = ?")) {
       statement.setString(1, player.getUuid().toString());
-      ResultSet resultSet = statement.executeQuery();
-
-      if (resultSet.next()) {
-        userInfo = UtilsFile.getGson().fromJson(resultSet.getString("data"), UserInfo.class);
-        DatabaseClientFactory.userInfoMap.put(player.getUuid(), userInfo);
-      } else {
-        userInfo = new UserInfo(player);
-        DatabaseClientFactory.userInfoMap.put(player.getUuid(), userInfo);
-        updateUserInfo(player, userInfo);
+      try (ResultSet resultSet = statement.executeQuery()) {
+        if (resultSet.next()) {
+          userInfo = UtilsFile.getGson().fromJson(resultSet.getString("data"), UserInfo.class);
+          DatabaseClientFactory.userInfoMap.put(player.getUuid(), userInfo);
+        } else {
+          userInfo = new UserInfo(player);
+          DatabaseClientFactory.userInfoMap.put(player.getUuid(), userInfo);
+          updateUserInfo(player, userInfo);
+        }
       }
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error fetching user info from MySQL", e);
+      CobbleWonderTrade.LOGGER.error("Error fetching user info from SQL database", e);
       userInfo = new UserInfo(player);
       DatabaseClientFactory.userInfoMap.put(player.getUuid(), userInfo);
     }
@@ -107,17 +102,18 @@ public class MySQLDatabaseClient extends DatabaseClient {
 
   @Override
   public Pokemon tradePokemon(ServerPlayerEntity player, Pokemon pokemon) {
+    if (pokemon == null) return null;
     try (Connection connection = dataSource.getConnection();
-         Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery("SELECT * FROM pokemons ORDER BY RAND() LIMIT 1");
+         Statement statement = connection.createStatement();
+         ResultSet resultSet = statement.executeQuery(dialect.getRandomPokemonQuery())) {
 
       if (!resultSet.next()) {
         CobbleWonderTrade.LOGGER.warn("No Pokémon available in the pool");
         return null;
       }
 
-      Pokemon tradedPokemon = UtilsFile.getGson().fromJson(resultSet.getString("data"), Pokemon.class);
       int id = resultSet.getInt("id");
+      Pokemon tradedPokemon = UtilsFile.getGson().fromJson(resultSet.getString("data"), Pokemon.class);
 
       try (PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM pokemons WHERE id = ?")) {
         deleteStatement.setInt(1, id);
@@ -132,14 +128,14 @@ public class MySQLDatabaseClient extends DatabaseClient {
       CommandTree.invalidateStats();
       return tradedPokemon;
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error trading Pokemon in MySQL", e);
+      CobbleWonderTrade.LOGGER.error("Error trading Pokemon in SQL database", e);
       return null;
     }
   }
 
   @Override
   public List<Pokemon> getPokemonsAnimation() {
-    return getPokemons("SELECT data FROM pokemons ORDER BY RAND() LIMIT " + DatabaseClientFactory.POKEMON_ANIMATION_SIZE);
+    return getPokemons(dialect.getRandomAnimationQuery(DatabaseClientFactory.POKEMON_ANIMATION_SIZE));
   }
 
   @Override
@@ -147,24 +143,30 @@ public class MySQLDatabaseClient extends DatabaseClient {
     return getPokemons("SELECT data FROM pokemons");
   }
 
-  private List<Pokemon> getPokemons(String query) {
+  protected List<Pokemon> getPokemons(String query) {
     List<Pokemon> pokemons = new ArrayList<>();
     try (Connection connection = dataSource.getConnection();
          Statement statement = connection.createStatement();
          ResultSet resultSet = statement.executeQuery(query)) {
 
       while (resultSet.next()) {
-        pokemons.add(UtilsFile.getGson().fromJson(resultSet.getString("data"), Pokemon.class));
+        String data = resultSet.getString("data");
+        if (data != null && !data.isBlank()) {
+          Pokemon pokemon = UtilsFile.getGson().fromJson(data, Pokemon.class);
+          if (pokemon != null) {
+            pokemons.add(pokemon);
+          }
+        }
       }
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error executing query: " + query, e);
+      CobbleWonderTrade.LOGGER.error("Error executing SQL query: " + query, e);
     }
     return pokemons;
   }
 
   @Override
   public void restartPool() {
-    CobbleWonderTrade.LOGGER.info("Restarting pool in MySQL");
+    CobbleWonderTrade.LOGGER.info("Restarting pool in SQL database");
     try (Connection connection = dataSource.getConnection()) {
       try (Statement statement = connection.createStatement()) {
         statement.executeUpdate("DELETE FROM pokemons");
@@ -173,14 +175,16 @@ public class MySQLDatabaseClient extends DatabaseClient {
       List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getPool().getSizePool(), 0);
       try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO pokemons (data) VALUES (?)")) {
         for (Pokemon pokemon : newPokemons) {
-          insertStatement.setString(1, UtilsFile.getGson().toJson(pokemon));
-          insertStatement.addBatch();
+          if (pokemon != null) {
+            insertStatement.setString(1, UtilsFile.getGson().toJson(pokemon));
+            insertStatement.addBatch();
+          }
         }
         insertStatement.executeBatch();
       }
       CommandTree.invalidateStats();
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error restarting pool in MySQL", e);
+      CobbleWonderTrade.LOGGER.error("Error restarting pool in SQL database", e);
     }
   }
 
@@ -188,13 +192,12 @@ public class MySQLDatabaseClient extends DatabaseClient {
   public void updateUserInfo(ServerPlayerEntity player, UserInfo userinfo) {
     if (player == null || userinfo == null) return;
     try (Connection connection = dataSource.getConnection();
-         PreparedStatement statement = connection.prepareStatement(
-           "REPLACE INTO user_info (uuid, data) VALUES (?, ?)")) {
+         PreparedStatement statement = connection.prepareStatement(dialect.getUpsertUserQuery())) {
       statement.setString(1, player.getUuid().toString());
       statement.setString(2, UtilsFile.getGson().toJson(userinfo));
       statement.executeUpdate();
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error updating user info in MySQL", e);
+      CobbleWonderTrade.LOGGER.error("Error updating user info in SQL database", e);
     }
   }
 
@@ -212,16 +215,17 @@ public class MySQLDatabaseClient extends DatabaseClient {
           List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(sizePool, currentCount);
           try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO pokemons (data) VALUES (?)")) {
             for (Pokemon pokemon : newPokemons) {
-              insertStatement.setString(1, UtilsFile.getGson().toJson(pokemon));
-              insertStatement.addBatch();
+              if (pokemon != null) {
+                insertStatement.setString(1, UtilsFile.getGson().toJson(pokemon));
+                insertStatement.addBatch();
+              }
             }
             insertStatement.executeBatch();
           }
         } else {
           int excessCount = currentCount - sizePool;
           if (excessCount > 0) {
-            try (PreparedStatement deleteStatement = connection.prepareStatement(
-              "DELETE FROM pokemons ORDER BY RAND() LIMIT ?")) {
+            try (PreparedStatement deleteStatement = connection.prepareStatement(dialect.getDeleteExcessQuery())) {
               deleteStatement.setInt(1, excessCount);
               deleteStatement.executeUpdate();
             }
@@ -231,7 +235,7 @@ public class MySQLDatabaseClient extends DatabaseClient {
       }
       CommandTree.invalidateStats();
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error fixing pool in MySQL", e);
+      CobbleWonderTrade.LOGGER.error("Error fixing pool in SQL database", e);
     }
   }
 
@@ -239,31 +243,31 @@ public class MySQLDatabaseClient extends DatabaseClient {
   public boolean shouldRestartPool() {
     if (!super.shouldRestartPool()) return false;
     long currentTime = System.currentTimeMillis();
-    long nextRestartTime = CobbleWonderTrade.config.getPool().getCooldownReset() * 60 * 1000L;
+    long nextRestartTime = TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getPool().getCooldownReset());
 
     try (Connection connection = dataSource.getConnection();
          Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery("SELECT restart_at FROM restart_info WHERE id = 1 LIMIT 1");
-
-      if (resultSet.next()) {
-        long restartAt = resultSet.getLong("restart_at");
-        if (currentTime >= restartAt) {
-          try (PreparedStatement updateStatement = connection.prepareStatement(
-            "UPDATE restart_info SET restart_at = ? WHERE id = 1")) {
-            updateStatement.setLong(1, currentTime + nextRestartTime);
-            updateStatement.executeUpdate();
+      try (ResultSet resultSet = statement.executeQuery("SELECT restart_at FROM restart_info WHERE id = 1 LIMIT 1")) {
+        if (resultSet.next()) {
+          long restartAt = resultSet.getLong("restart_at");
+          if (currentTime >= restartAt) {
+            try (PreparedStatement updateStatement = connection.prepareStatement(
+              "UPDATE restart_info SET restart_at = ? WHERE id = 1")) {
+              updateStatement.setLong(1, currentTime + nextRestartTime);
+              updateStatement.executeUpdate();
+            }
+            return true;
           }
-          return true;
-        }
-      } else {
-        try (PreparedStatement insertStatement = connection.prepareStatement(
-          "INSERT INTO restart_info (id, restart_at) VALUES (1, ?)")) {
-          insertStatement.setLong(1, currentTime + nextRestartTime);
-          insertStatement.executeUpdate();
+        } else {
+          try (PreparedStatement insertStatement = connection.prepareStatement(
+            "INSERT INTO restart_info (id, restart_at) VALUES (1, ?)")) {
+            insertStatement.setLong(1, currentTime + nextRestartTime);
+            insertStatement.executeUpdate();
+          }
         }
       }
     } catch (SQLException e) {
-      CobbleWonderTrade.LOGGER.error("Error checking restart pool in MySQL", e);
+      CobbleWonderTrade.LOGGER.error("Error checking restart pool in SQL database", e);
     }
 
     return false;

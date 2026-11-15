@@ -36,9 +36,12 @@ public class RestartUserSubCommand {
               try {
                 Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(context, "players");
                 for (ServerPlayerEntity player : players) {
+                  if (player == null) continue;
                   var userinfo = new UserInfo(player);
                   DatabaseClientFactory.userInfoMap.put(player.getUuid(), userinfo);
-                  DatabaseClientFactory.databaseClient.updateUserInfo(player, userinfo);
+                  if (DatabaseClientFactory.databaseClient != null) {
+                    DatabaseClientFactory.databaseClient.updateUserInfo(player, userinfo);
+                  }
                 }
               } catch (CommandSyntaxException e) {
                 CobbleWonderTrade.LOGGER.error("Error retrieving target players in restartUser", e);

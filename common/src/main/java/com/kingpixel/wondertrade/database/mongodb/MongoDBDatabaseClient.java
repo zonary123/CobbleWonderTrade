@@ -1,10 +1,12 @@
-package com.kingpixel.wondertrade.database;
+package com.kingpixel.wondertrade.database.mongodb;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.Model.DataBaseConfig;
 import com.kingpixel.cobbleutils.util.UtilsFile;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.command.CommandTree;
+import com.kingpixel.wondertrade.database.DatabaseClient;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import com.kingpixel.wondertrade.model.UserInfo;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
@@ -53,7 +55,11 @@ public class MongoDBDatabaseClient extends DatabaseClient {
   public void disconnect() {
     CobbleWonderTrade.LOGGER.info("Disconnecting from MongoDB Database");
     if (mongoClient != null) {
-      mongoClient.close();
+      try {
+        mongoClient.close();
+      } catch (Exception e) {
+        CobbleWonderTrade.LOGGER.error("Error closing MongoDB client", e);
+      }
     }
   }
 
@@ -77,6 +83,7 @@ public class MongoDBDatabaseClient extends DatabaseClient {
 
   @Override
   public Pokemon tradePokemon(ServerPlayerEntity player, Pokemon pokemon) {
+    if (pokemon == null) return null;
     Document randomPokemonDocument = pokemonsCollection.aggregate(List.of(new Document("$sample", new Document("size", 1)))).first();
     if (randomPokemonDocument == null) {
       CobbleWonderTrade.LOGGER.warn("No Pokémon available in the pool");
@@ -84,7 +91,11 @@ public class MongoDBDatabaseClient extends DatabaseClient {
     }
 
     Pokemon tradedPokemon = UtilsFile.getGson().fromJson(randomPokemonDocument.toJson(), Pokemon.class);
-    pokemonsCollection.deleteOne(randomPokemonDocument);
+    if (randomPokemonDocument.containsKey("_id")) {
+      pokemonsCollection.deleteOne(new Document("_id", randomPokemonDocument.get("_id")));
+    } else {
+      pokemonsCollection.deleteOne(randomPokemonDocument);
+    }
     pokemonsCollection.insertOne(Document.parse(UtilsFile.getGson().toJson(pokemon)));
     CommandTree.invalidateStats();
     return tradedPokemon;
@@ -119,6 +130,7 @@ public class MongoDBDatabaseClient extends DatabaseClient {
     pokemonsCollection.deleteMany(new Document());
     List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getPool().getSizePool(), 0);
     List<Document> pokemonDocuments = newPokemons.stream()
+      .filter(p -> p != null)
       .map(pokemon -> Document.parse(UtilsFile.getGson().toJson(pokemon)))
       .toList();
     if (!pokemonDocuments.isEmpty()) {
@@ -145,6 +157,7 @@ public class MongoDBDatabaseClient extends DatabaseClient {
     if (currentCount < sizePool) {
       List<Pokemon> newPokemons = DatabaseClientFactory.getGeneratedPool(sizePool, (int) currentCount);
       List<Document> pokemonDocuments = newPokemons.stream()
+        .filter(p -> p != null)
         .map(pokemon -> Document.parse(UtilsFile.getGson().toJson(pokemon)))
         .toList();
       if (!pokemonDocuments.isEmpty()) {

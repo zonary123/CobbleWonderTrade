@@ -106,6 +106,14 @@ allprojects {
         ]
     }
 
+    tasks.withType(Copy).configureEach {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+
+    tasks.withType(AbstractArchiveTask).configureEach {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+
     java {
         withSourcesJar()
     }

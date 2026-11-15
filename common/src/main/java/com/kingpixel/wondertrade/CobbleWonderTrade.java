@@ -4,6 +4,7 @@ import com.kingpixel.cobbleutils.Model.DataBaseType;
 import com.kingpixel.cobbleutils.Model.FilterPokemons;
 import com.kingpixel.cobbleutils.util.PlayerUtils;
 import com.kingpixel.cobbleutils.util.TypeMessage;
+import com.kingpixel.cobbleutils.util.UtilsFile;
 import com.kingpixel.cobbleutils.util.UtilsLogger;
 import com.kingpixel.cobbleutils.util.async.AsyncContext;
 import com.kingpixel.cobbleutils.util.async.UtilsAsync;
@@ -66,12 +67,20 @@ public class CobbleWonderTrade {
     LifecycleEvent.SERVER_STARTED.register(s -> load());
 
     PlayerEvent.PLAYER_JOIN.register(player -> {
-      ASYNC.runAsync(() -> DatabaseClientFactory.databaseClient.getUserInfo(player));
+      ASYNC.runAsync(() -> {
+        if (DatabaseClientFactory.databaseClient != null && player != null) {
+          DatabaseClientFactory.databaseClient.getUserInfo(player);
+        }
+      });
     });
 
     PlayerEvent.PLAYER_QUIT.register(player -> {
-      DatabaseClientFactory.databaseClient.removeIfNecessary(player);
-      WonderTradePoolUI.removePlayer(player.getUuid());
+      if (player != null) {
+        if (DatabaseClientFactory.databaseClient != null) {
+          DatabaseClientFactory.databaseClient.removeIfNecessary(player);
+        }
+        WonderTradePoolUI.removePlayer(player.getUuid());
+      }
     });
 
     LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> server = level.getServer());
@@ -86,6 +95,7 @@ public class CobbleWonderTrade {
   }
 
   private static void files() {
+    UtilsFile.extractWiki(CobbleWonderTrade.class, Path.of(PATH));
     FilterPokemons.removeCache(MOD_ID);
     config.init();
     language.init();
@@ -109,7 +119,7 @@ public class CobbleWonderTrade {
     if (config.getCooldowns().getCooldownmessage() > 0) {
       playerCheckFuture = ASYNC.scheduleAtFixedRateWithFuture(() -> {
         if (config.isDebug()) LOGGER.info("Checking players for WonderTrade cooldown");
-        if (server == null || server.getPlayerManager() == null) return;
+        if (server == null || server.getPlayerManager() == null || DatabaseClientFactory.databaseClient == null) return;
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
           if (player == null) continue;
           var userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
@@ -126,7 +136,7 @@ public class CobbleWonderTrade {
     if (config.getPool().getCooldownReset() > 0 && config.getPool().isAutoReset() && !config.getPool().isIsrandom()) {
       autoResetFuture = ASYNC.scheduleAtFixedRateWithFuture(() -> {
         if (config.isDebug()) LOGGER.info("Checking Auto Reset Pool");
-        if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
+        if (DatabaseClientFactory.databaseClient != null && DatabaseClientFactory.databaseClient.shouldRestartPool()) {
           if (config.isDebug()) LOGGER.info("Resetting WonderTrade Pool");
           DatabaseClientFactory.databaseClient.restartPool();
         }
@@ -139,6 +149,7 @@ public class CobbleWonderTrade {
         if (server == null) return;
         if (config.isDebug()) LOGGER.info("Broadcasting WonderTrade stats");
         var stats = CommandTree.getPokemonStats();
+        if (stats == null || stats.getPokemons() == null) return;
         String message = CommandTree.prepareLore(language.getMessagepoolwondertrade(), stats)
           .replace("%total%", String.valueOf(stats.getPokemons().size()));
         PlayerUtils.broadcast(message, language.getPrefix());

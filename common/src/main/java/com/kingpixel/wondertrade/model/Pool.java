@@ -23,11 +23,19 @@ public class Pool {
   private List<Pokemon> pokemons;
 
   public Pool() {
+    this.cooldown = 0L;
+    this.pokemons = new ArrayList<>();
+  }
+
+  public synchronized void restart() {
     this.cooldown = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getPool().getCooldownReset());
     this.pokemons = new ArrayList<>(DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getPool().getSizePool(), 0));
   }
 
   public synchronized void fix() {
+    if (this.cooldown == null || this.cooldown <= 0L) {
+      this.cooldown = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(CobbleWonderTrade.config.getPool().getCooldownReset());
+    }
     if (this.pokemons == null) {
       this.pokemons = new ArrayList<>(DatabaseClientFactory.getGeneratedPool(CobbleWonderTrade.config.getPool().getSizePool(), 0));
     } else {

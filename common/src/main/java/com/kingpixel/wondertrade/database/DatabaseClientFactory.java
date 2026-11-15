@@ -11,8 +11,15 @@ import com.kingpixel.cobbleutils.Model.DataBaseType;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.command.CommandTree;
+import com.kingpixel.wondertrade.database.json.JsonDatabaseClient;
+import com.kingpixel.wondertrade.database.mongodb.MongoDBDatabaseClient;
+import com.kingpixel.wondertrade.database.sql.MySQLDatabaseClient;
+import com.kingpixel.wondertrade.database.sql.SQLiteDatabaseClient;
+import com.kingpixel.wondertrade.database.sql.SqlDatabaseClient;
+import com.kingpixel.wondertrade.database.sql.dialect.H2Dialect;
 import com.kingpixel.wondertrade.model.UserInfo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -46,16 +53,19 @@ public class DatabaseClientFactory {
       databaseClient.disconnect();
     }
 
-    DataBaseType type = config.getType();
+    DataBaseType type = config != null ? config.getType() : DataBaseType.JSON;
     if (type == null) type = DataBaseType.JSON;
 
     switch (type) {
       case JSON -> databaseClient = new JsonDatabaseClient(config);
-      case MYSQL -> databaseClient = new MySQLDatabaseClient(config);
+      case MYSQL, MARIADB -> databaseClient = new MySQLDatabaseClient(config);
       case MONGODB -> databaseClient = new MongoDBDatabaseClient(config);
       case SQLITE -> databaseClient = new SQLiteDatabaseClient(config);
-      default ->
-        throw new IllegalArgumentException("Database type not supported -> " + Arrays.toString(DataBaseType.values()));
+      case H2 -> databaseClient = new SqlDatabaseClient(config, new H2Dialect());
+      default -> {
+        CobbleWonderTrade.LOGGER.error("Database type not supported: " + type + ", falling back to JSON");
+        databaseClient = new JsonDatabaseClient(config);
+      }
     }
 
     databaseClient.connect();
@@ -64,11 +74,15 @@ public class DatabaseClientFactory {
 
   public static List<Pokemon> getGeneratedPool(int sizePool, int currentSize) {
     int countToGenerate = Math.max(0, sizePool - currentSize);
+    if (countToGenerate <= 0) return new ArrayList<>();
+
     var pokemons = CobbleWonderTrade.config.getPool().getFilterGenerationPokemon().generateRandomPokemons(
       CobbleWonderTrade.MOD_ID,
       "pool",
       countToGenerate
     );
+
+    if (pokemons == null) pokemons = new ArrayList<>();
 
     applyProperties(pokemons);
     putLevels(pokemons);
@@ -78,6 +92,7 @@ public class DatabaseClientFactory {
   private static void applyProperties(List<Pokemon> pokemons) {
     for (int i = 0; i < pokemons.size(); i++) {
       Pokemon pokemon = pokemons.get(i);
+      if (pokemon == null) continue;
       boolean replaced = false;
 
       // Mythical rate
@@ -85,9 +100,11 @@ public class DatabaseClientFactory {
         int mythical = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getMythicalrate());
         if (mythical == 0 && !pokemon.isMythical()) {
           Pokemon newPokemon = getMythical();
-          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getMythicalperfectivs());
-          pokemons.set(i, newPokemon);
-          replaced = true;
+          if (newPokemon != null) {
+            applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getMythicalperfectivs());
+            pokemons.set(i, newPokemon);
+            replaced = true;
+          }
         }
       }
 
@@ -96,9 +113,11 @@ public class DatabaseClientFactory {
         int legendary = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getLegendaryrate());
         if (legendary == 0 && !pokemon.isLegendary()) {
           Pokemon newPokemon = getLegendary();
-          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getLegendaryperfectivs());
-          pokemons.set(i, newPokemon);
-          replaced = true;
+          if (newPokemon != null) {
+            applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getLegendaryperfectivs());
+            pokemons.set(i, newPokemon);
+            replaced = true;
+          }
         }
       }
 
@@ -107,19 +126,26 @@ public class DatabaseClientFactory {
         int ultraBeast = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getUltrabeastrate());
         if (ultraBeast == 0 && !pokemon.isUltraBeast()) {
           Pokemon newPokemon = getUltraBeast();
-          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getUltrabeastperfectivs());
-          pokemons.set(i, newPokemon);
-          replaced = true;
+          if (newPokemon != null) {
+            applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getUltrabeastperfectivs());
+            pokemons.set(i, newPokemon);
+            replaced = true;
+          }
         }
       }
 
       // Paradox rate
       if (!replaced && CobbleWonderTrade.config.getRates().getParadoxrate() > 0) {
         int paradox = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getParadoxrate());
-        if (paradox == 0 && !pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX)) {
+        boolean isParadox = pokemon.getForm() != null && pokemon.getForm().getLabels() != null
+            && pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX);
+        if (paradox == 0 && !isParadox) {
           Pokemon newPokemon = getParadox();
-          applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getParadoxperfectivs());
-          pokemons.set(i, newPokemon);
+          if (newPokemon != null) {
+            applyPerfectIvs(newPokemon, CobbleWonderTrade.config.getRates().getParadoxperfectivs());
+            pokemons.set(i, newPokemon);
+            replaced = true;
+          }
         }
       }
 
@@ -149,7 +175,9 @@ public class DatabaseClientFactory {
   private static Pokemon getRandomByLabel(String label) {
     List<Species> filtered = getSpeciesByLabel(label);
     if (filtered.isEmpty()) {
-      return PokemonSpecies.getImplemented().get(0).create(1);
+      var implemented = PokemonSpecies.getImplemented();
+      if (implemented.isEmpty()) return null;
+      return implemented.get(0).create(1);
     }
     return filtered.get(Utils.getRandom().nextInt(filtered.size())).create(1);
   }
@@ -171,12 +199,16 @@ public class DatabaseClientFactory {
   }
 
   public static void putLevels(List<Pokemon> pokemons) {
+    if (pokemons == null) return;
     for (Pokemon pokemon : pokemons) {
-      setLevel(pokemon);
+      if (pokemon != null) {
+        setLevel(pokemon);
+      }
     }
   }
 
   public static void setLevel(Pokemon pokemon) {
+    if (pokemon == null) return;
     int min = CobbleWonderTrade.config.getPool().getMinlv();
     int max = CobbleWonderTrade.config.getPool().getMaxlv();
     if (min > max) {
@@ -185,8 +217,13 @@ public class DatabaseClientFactory {
       max = temp;
     }
     pokemon.setLevel(Utils.getRandom().nextInt(min, max + 1));
-    if (pokemon.getLevel() > Cobblemon.INSTANCE.getConfig().getMaxPokemonLevel()) {
-      pokemon.setLevel(Cobblemon.INSTANCE.getConfig().getMaxPokemonLevel());
-    }
+    try {
+      if (Cobblemon.INSTANCE != null && Cobblemon.INSTANCE.getConfig() != null) {
+        int maxLvl = Cobblemon.INSTANCE.getConfig().getMaxPokemonLevel();
+        if (pokemon.getLevel() > maxLvl) {
+          pokemon.setLevel(maxLvl);
+        }
+      }
+    } catch (Throwable ignored) {}
   }
 }

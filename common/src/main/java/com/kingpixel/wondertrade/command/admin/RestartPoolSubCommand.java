@@ -27,7 +27,9 @@ public class RestartPoolSubCommand {
       ), 2))
       .executes(context -> {
         CobbleWonderTrade.ASYNC.runAsync(() -> {
-          DatabaseClientFactory.databaseClient.restartPool();
+          if (DatabaseClientFactory.databaseClient != null) {
+            DatabaseClientFactory.databaseClient.restartPool();
+          }
           WonderTradeUtils.invalidateStats();
         });
         return 1;

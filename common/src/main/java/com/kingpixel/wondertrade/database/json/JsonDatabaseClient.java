@@ -1,10 +1,12 @@
-package com.kingpixel.wondertrade.database;
+package com.kingpixel.wondertrade.database.json;
 
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.kingpixel.cobbleutils.Model.DataBaseConfig;
 import com.kingpixel.cobbleutils.util.UtilsFile;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
 import com.kingpixel.wondertrade.command.CommandTree;
+import com.kingpixel.wondertrade.database.DatabaseClient;
+import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import com.kingpixel.wondertrade.model.Pool;
 import com.kingpixel.wondertrade.model.UserInfo;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -46,9 +48,15 @@ public class JsonDatabaseClient extends DatabaseClient {
       }
       pool.fix();
       UtilsFile.write(PATH_POOL, pool);
-    } catch (IOException e) {
+    } catch (Exception e) {
       CobbleWonderTrade.LOGGER.error("Error creating/reading pool.json", e);
       pool = new Pool();
+      pool.fix();
+      try {
+        UtilsFile.write(PATH_POOL, pool);
+      } catch (Exception ex) {
+        CobbleWonderTrade.LOGGER.error("Failed to write fallback pool.json", ex);
+      }
     }
   }
 
@@ -82,6 +90,7 @@ public class JsonDatabaseClient extends DatabaseClient {
 
   @Override
   public Pokemon tradePokemon(ServerPlayerEntity player, Pokemon pokemon) {
+    if (pokemon == null) return null;
     if (pool == null) fixPool();
     Pokemon trade = pool.tradePokemon(pokemon);
     updatePool();
@@ -113,6 +122,7 @@ public class JsonDatabaseClient extends DatabaseClient {
   public void restartPool() {
     CobbleWonderTrade.LOGGER.info("Restarting WonderTrade pool");
     pool = new Pool();
+    pool.restart();
     try {
       UtilsFile.write(PATH_POOL, pool);
       CommandTree.invalidateStats();

@@ -44,7 +44,8 @@ public class WonderTradeUtils {
       synchronized (WonderTradeUtils.class) {
         stats = cachedStats;
         if (stats == null) {
-          var pokemons = DatabaseClientFactory.databaseClient.getAllPokemons();
+          var databaseClient = DatabaseClientFactory.databaseClient;
+          var pokemons = databaseClient != null ? databaseClient.getAllPokemons() : List.<Pokemon>of();
           stats = calculatePokemonStats(pokemons);
           cachedStats = stats;
         }
@@ -70,7 +71,8 @@ public class WonderTradeUtils {
         ItemModel itemModelInfo = CobbleWonderTrade.language.getInfo();
         if (UIUtils.isInside(itemModelInfo, CobbleWonderTrade.language.getPartyPcMenu().getRowsParty()) && CobbleWonderTrade.config.getPool().isPoolview()) {
           var stats = getPokemonStats();
-          var userinfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
+          var databaseClient = DatabaseClientFactory.databaseClient;
+          var userinfo = databaseClient != null ? databaseClient.getUserInfo(player) : null;
           List<String> lore = prepareLore(CobbleWonderTrade.language.getInfo().getLore(), stats, userinfo);
 
           GooeyButton button = itemModelInfo.getButton(1, itemModelInfo.getDisplayname(), lore, action -> {
@@ -119,7 +121,12 @@ public class WonderTradeUtils {
     int ivs31 = 0;
     List<Pokemon> special = new ArrayList<>();
 
+    if (pokemons == null || pokemons.isEmpty()) {
+      return new PokemonStats(0, 0, 0, 0, 0, 0, special, List.of());
+    }
+
     for (Pokemon pokemon : pokemons) {
+      if (pokemon == null) continue;
       boolean isSpecial = false;
       if (pokemon.getShiny()) {
         shinys++;
@@ -137,11 +144,13 @@ public class WonderTradeUtils {
         ultraBeasts++;
         isSpecial = true;
       }
-      if (pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX)) {
+      boolean isParadox = pokemon.getForm() != null && pokemon.getForm().getLabels() != null
+        && pokemon.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX);
+      if (isParadox) {
         paradoxes++;
         isSpecial = true;
       }
-      if (PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31) {
+      if (pokemon.getIvs() != null && PokemonUtils.getIvsAverage(pokemon.getIvs()) == 31) {
         ivs31++;
         isSpecial = true;
       }
@@ -175,7 +184,13 @@ public class WonderTradeUtils {
 
   public static void handlePokemonAction(ServerPlayerEntity player, Pokemon pokemon) {
     long currentTime = System.currentTimeMillis();
-    UserInfo userInfo = DatabaseClientFactory.databaseClient.getUserInfo(player);
+    var databaseClient = DatabaseClientFactory.databaseClient;
+    if (databaseClient == null) return;
+
+    UserInfo userInfo = databaseClient.getUserInfo(player);
+    if (userInfo == null) {
+      userInfo = new UserInfo(player);
+    }
 
     if (userInfo.hasCooldown()) {
       sendCooldownMessage(player, userInfo);
@@ -190,16 +205,20 @@ public class WonderTradeUtils {
 
     UIManager.closeUI(player);
     userInfo.setCooldown(player);
-    DatabaseClientFactory.databaseClient.updateUserInfo(player, userInfo);
+    databaseClient.updateUserInfo(player, userInfo);
     Pokemon pokemonObtained;
     if (!CobbleWonderTrade.config.getPool().isIsrandom()) {
-      pokemonObtained = DatabaseClientFactory.databaseClient.tradePokemon(player, pokemon);
+      pokemonObtained = databaseClient.tradePokemon(player, pokemon);
+      if (pokemonObtained == null) {
+        CobbleWonderTrade.LOGGER.warn("Trade aborted: no Pokémon returned from pool");
+        return;
+      }
       invalidateStats();
-      if (DatabaseClientFactory.databaseClient.shouldRestartPool()) {
+      if (databaseClient.shouldRestartPool()) {
         if (CobbleWonderTrade.config.isDebug()) {
           CobbleWonderTrade.LOGGER.info("Resetting Pool");
         }
-        DatabaseClientFactory.databaseClient.restartPool();
+        databaseClient.restartPool();
         invalidateStats();
       }
     } else {
@@ -208,35 +227,60 @@ public class WonderTradeUtils {
         "pool"
       );
 
+      if (pokemonObtained == null) {
+        CobbleWonderTrade.LOGGER.warn("Trade aborted: generation returned null Pokémon");
+        return;
+      }
+
       if (CobbleWonderTrade.config.getRates().getParadoxrate() > 0) {
         int paradox = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getParadoxrate());
-        if (paradox == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX)) {
-          pokemonObtained = DatabaseClientFactory.getParadox();
-          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getParadoxperfectivs());
+        boolean isParadox = pokemonObtained.getForm() != null && pokemonObtained.getForm().getLabels() != null
+          && pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.PARADOX);
+        if (paradox == 0 && !isParadox) {
+          Pokemon newPokemon = DatabaseClientFactory.getParadox();
+          if (newPokemon != null) {
+            pokemonObtained = newPokemon;
+            DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getParadoxperfectivs());
+          }
         }
       }
 
       if (CobbleWonderTrade.config.getRates().getUltrabeastrate() > 0) {
         int ultraBeast = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getUltrabeastrate());
-        if (ultraBeast == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.ULTRA_BEAST)) {
-          pokemonObtained = DatabaseClientFactory.getUltraBeast();
-          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getUltrabeastperfectivs());
+        boolean isUltraBeast = pokemonObtained.getForm() != null && pokemonObtained.getForm().getLabels() != null
+          && pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.ULTRA_BEAST);
+        if (ultraBeast == 0 && !isUltraBeast) {
+          Pokemon newPokemon = DatabaseClientFactory.getUltraBeast();
+          if (newPokemon != null) {
+            pokemonObtained = newPokemon;
+            DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getUltrabeastperfectivs());
+          }
         }
       }
 
       if (CobbleWonderTrade.config.getRates().getLegendaryrate() > 0) {
         int legendary = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getLegendaryrate());
-        if (legendary == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY)) {
-          pokemonObtained = DatabaseClientFactory.getLegendary();
-          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getLegendaryperfectivs());
+        boolean isLegendary = pokemonObtained.getForm() != null && pokemonObtained.getForm().getLabels() != null
+          && pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.LEGENDARY);
+        if (legendary == 0 && !isLegendary) {
+          Pokemon newPokemon = DatabaseClientFactory.getLegendary();
+          if (newPokemon != null) {
+            pokemonObtained = newPokemon;
+            DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getLegendaryperfectivs());
+          }
         }
       }
 
       if (CobbleWonderTrade.config.getRates().getMythicalrate() > 0) {
         int mythical = Utils.getRandom().nextInt(CobbleWonderTrade.config.getRates().getMythicalrate());
-        if (mythical == 0 && !pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.MYTHICAL)) {
-          pokemonObtained = DatabaseClientFactory.getMythical();
-          DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getMythicalperfectivs());
+        boolean isMythical = pokemonObtained.getForm() != null && pokemonObtained.getForm().getLabels() != null
+          && pokemonObtained.getForm().getLabels().contains(CobblemonPokemonLabels.MYTHICAL);
+        if (mythical == 0 && !isMythical) {
+          Pokemon newPokemon = DatabaseClientFactory.getMythical();
+          if (newPokemon != null) {
+            pokemonObtained = newPokemon;
+            DatabaseClientFactory.applyPerfectIvs(pokemonObtained, CobbleWonderTrade.config.getRates().getMythicalperfectivs());
+          }
         }
       }
 
@@ -299,17 +343,21 @@ public class WonderTradeUtils {
     sendWebHook(oldPokemon, newPokemon, player);
     List<Pokemon> animations;
     if (CobbleWonderTrade.config.getPool().isIsrandom()) {
-      animations = DatabaseClientFactory.databaseClient.getPokemonsAnimation();
-    } else {
       animations = CobbleWonderTrade.config.getPool().getFilterGenerationPokemon().generateRandomPokemons(
         CobbleWonderTrade.MOD_ID,
         "pool",
         DatabaseClientFactory.POKEMON_ANIMATION_SIZE
       );
+    } else {
+      animations = DatabaseClientFactory.databaseClient != null
+        ? DatabaseClientFactory.databaseClient.getPokemonsAnimation()
+        : List.of();
     }
+    if (animations == null) animations = List.of();
 
     var tintNotObtained = new Vector4f(0.5f, 0.5f, 0.5f, 1);
     var animationsItems = animations.stream()
+      .filter(p -> p != null)
       .map(pokemon -> PokemonItem.from(pokemon, 1, tintNotObtained))
       .toList();
 
@@ -326,10 +374,14 @@ public class WonderTradeUtils {
     var party = Cobblemon.INSTANCE.getStorage().getParty(player);
     var pc = Cobblemon.INSTANCE.getStorage().getPC(player);
 
-    if (!party.remove(oldPokemon)) {
+    if (party.remove(oldPokemon)) {
+      party.add(newPokemon);
+    } else {
       pc.remove(oldPokemon);
+      if (!party.add(newPokemon)) {
+        pc.add(newPokemon);
+      }
     }
-    party.add(newPokemon);
   }
 
   public static void sendWebHook(Pokemon oldPokemon, Pokemon newPokemon, ServerPlayerEntity player) {

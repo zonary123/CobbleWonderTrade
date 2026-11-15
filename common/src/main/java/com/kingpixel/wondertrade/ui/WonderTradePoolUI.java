@@ -92,6 +92,7 @@ public class WonderTradePoolUI {
 
     List<Button> buttons = new ArrayList<>();
     for (Pokemon pokemon : pokemons) {
+      if (pokemon == null) continue;
       GooeyButton button = GooeyButton.builder()
         .display(PokemonItem.from(pokemon))
         .with(DataComponentTypes.CUSTOM_NAME, AdventureTranslator.toNative(PokemonUtils.replace(pokemon)))

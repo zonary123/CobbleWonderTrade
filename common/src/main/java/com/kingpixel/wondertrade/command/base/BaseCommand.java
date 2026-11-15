@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
 import java.util.List;
 
@@ -27,6 +28,10 @@ public class BaseCommand {
       ), 2))
       .executes(context -> {
         ServerPlayerEntity player = context.getSource().getPlayer();
+        if (player == null) {
+          context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players in-game."), false);
+          return 0;
+        }
         WonderTradeUtils.open(player);
         return 1;
       });
