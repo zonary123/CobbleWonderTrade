@@ -18,6 +18,7 @@ import com.kingpixel.cobbleutils.util.TypeMessage;
 import com.kingpixel.cobbleutils.util.UIUtils;
 import com.kingpixel.cobbleutils.util.Utils;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
+import com.kingpixel.wondertrade.api.ui.WonderTradeMenuRegistry;
 import com.kingpixel.wondertrade.database.DatabaseClientFactory;
 import com.kingpixel.wondertrade.model.UserInfo;
 import net.minecraft.item.ItemStack;
@@ -91,7 +92,7 @@ public class WonderTradeUtils {
                 case RIGHT_CLICK, SHIFT_RIGHT_CLICK -> list = stats.getSpecial();
                 default -> list = stats.getPokemons();
               }
-              CobbleWonderTrade.language.getPool().open(player, list);
+              WonderTradeMenuRegistry.openPoolMenu(player, list);
             });
           });
           itemModelInfo.applyTemplate((ChestTemplate) template, button);

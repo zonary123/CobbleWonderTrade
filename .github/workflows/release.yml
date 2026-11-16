@@ -57,10 +57,8 @@ jobs:
             --title "Release $TAG" \
             --notes "Automated release for version $TAG"
 
-      - name: Send Discord Notification with Embed and File
+      - name: Send Discord Notification with Embed and Files
         run: |
-          FILE=$(ls fabric/build/libs/*.jar 2>/dev/null | grep -v "sources" | grep -v "dev-shadow" | grep -v "\-dev\.jar" | head -n1 || true)
-          
           # Extraer changelog
           BASE=$(echo "$TAG" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "$MOD_VERSION")
           CHANGELOG_CONTENT=""
@@ -88,9 +86,11 @@ jobs:
               -H "Content-Type: application/json" \
               -d "$JSON_PAYLOAD"
             
-            # 2️⃣ Enviar archivo
-            if [ -n "$FILE" ] && [ -f "$FILE" ]; then
-              curl -s -X POST "$DISCORD_WEBHOOK_URL" \
-                -F "file=@${FILE}"
-            fi
+            # 2️⃣ Enviar todos los JARs relevantes a Discord (incluyendo api)
+            for FILE in fabric/build/libs/*.jar; do
+              if [[ "$FILE" != *"sources"* && "$FILE" != *"dev-shadow"* && "$FILE" != *"-dev.jar" && -f "$FILE" ]]; then
+                echo "Enviando $FILE a Discord..."
+                curl -s -X POST "$DISCORD_WEBHOOK_URL" -F "file=@${FILE}"
+              fi
+            done
           fi

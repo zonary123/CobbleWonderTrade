@@ -2,8 +2,7 @@ package com.kingpixel.wondertrade.command.admin;
 
 import com.kingpixel.cobbleutils.api.PermissionApi;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.command.utils.WonderTradeUtils;
-import com.kingpixel.wondertrade.database.DatabaseClientFactory;
+import com.kingpixel.wondertrade.api.WonderTradeApi;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -26,12 +25,7 @@ public class RestartPoolSubCommand {
         CobbleWonderTrade.MOD_ID + ".restart.pool"
       ), 2))
       .executes(context -> {
-        CobbleWonderTrade.ASYNC.runAsync(() -> {
-          if (DatabaseClientFactory.databaseClient != null) {
-            DatabaseClientFactory.databaseClient.restartPool();
-          }
-          WonderTradeUtils.invalidateStats();
-        });
+        CobbleWonderTrade.ASYNC.runAsync(() -> WonderTradeApi.restartPool());
         return 1;
       });
   }

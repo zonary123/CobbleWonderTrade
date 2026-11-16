@@ -104,3 +104,33 @@ sourcesJar {
     dependsOn commonSources
     from commonSources.archiveFile.map { zipTree(it) }
 }
+
+tasks.register("apiJar", Jar) {
+    archiveClassifier.set("api")
+    from(project(":common").sourceSets.main.output) {
+        include "com/kingpixel/wondertrade/api/**"
+        include "com/kingpixel/wondertrade/application/**"
+        include "com/kingpixel/wondertrade/model/**"
+    }
+    from(rootProject.file("LICENSE")) {
+        rename { "${it}_${project.archivesBaseName}" }
+    }
+}
+
+tasks.named("build") {
+    dependsOn tasks.named("apiJar")
+}
+
+tasks.named("assemble") {
+    dependsOn tasks.named("apiJar")
+}
+
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archivesBaseName
+            from components.java
+            artifact tasks.named("apiJar")
+        }
+    }
+}

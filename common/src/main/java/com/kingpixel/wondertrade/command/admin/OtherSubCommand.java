@@ -2,7 +2,7 @@ package com.kingpixel.wondertrade.command.admin;
 
 import com.kingpixel.cobbleutils.api.PermissionApi;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.command.utils.WonderTradeUtils;
+import com.kingpixel.wondertrade.api.WonderTradeApi;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.server.command.CommandManager;
@@ -32,7 +32,7 @@ public class OtherSubCommand {
           .executes(context -> {
             Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(context, "player");
             for (ServerPlayerEntity player : players) {
-              WonderTradeUtils.open(player);
+              WonderTradeApi.openTradeMenu(player);
             }
             return 1;
           })

@@ -2,7 +2,7 @@ package com.kingpixel.wondertrade.command.base;
 
 import com.kingpixel.cobbleutils.api.PermissionApi;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.command.utils.WonderTradeUtils;
+import com.kingpixel.wondertrade.api.WonderTradeApi;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -32,7 +32,7 @@ public class BaseCommand {
           context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players in-game."), false);
           return 0;
         }
-        WonderTradeUtils.open(player);
+        WonderTradeApi.openTradeMenu(player);
         return 1;
       });
   }

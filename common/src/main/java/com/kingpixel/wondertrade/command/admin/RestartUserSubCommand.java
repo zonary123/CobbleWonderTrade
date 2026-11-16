@@ -2,8 +2,7 @@ package com.kingpixel.wondertrade.command.admin;
 
 import com.kingpixel.cobbleutils.api.PermissionApi;
 import com.kingpixel.wondertrade.CobbleWonderTrade;
-import com.kingpixel.wondertrade.database.DatabaseClientFactory;
-import com.kingpixel.wondertrade.model.UserInfo;
+import com.kingpixel.wondertrade.api.WonderTradeApi;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.argument.EntityArgumentType;
@@ -37,11 +36,7 @@ public class RestartUserSubCommand {
                 Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(context, "players");
                 for (ServerPlayerEntity player : players) {
                   if (player == null) continue;
-                  var userinfo = new UserInfo(player);
-                  DatabaseClientFactory.userInfoMap.put(player.getUuid(), userinfo);
-                  if (DatabaseClientFactory.databaseClient != null) {
-                    DatabaseClientFactory.databaseClient.updateUserInfo(player, userinfo);
-                  }
+                  WonderTradeApi.resetCooldown(player);
                 }
               } catch (CommandSyntaxException e) {
                 CobbleWonderTrade.LOGGER.error("Error retrieving target players in restartUser", e);

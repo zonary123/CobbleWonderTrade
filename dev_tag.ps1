@@ -1,36 +1,33 @@
+# Get version from gradle.properties
 $gradleFile = "gradle.properties"
 if (-Not (Test-Path $gradleFile)) {
-    Write-Error "No se encontro gradle.properties"
+    Write-Error "gradle.properties not found"
     exit 1
 }
 
-$matchingLines = @(Get-Content $gradleFile | Where-Object { $_ -match '^(mod_)?version=' })
-if ($matchingLines.Count -eq 0) {
-    Write-Error "No se encontro version en gradle.properties"
+$versionLine = Get-Content $gradleFile | Where-Object { $_ -match '^mod_version=' }
+if (-Not $versionLine) {
+    Write-Error "mod_version not found in gradle.properties"
     exit 1
 }
 
-$versionLine = $matchingLines[0]
 $version = ($versionLine -split '=')[1].Trim()
 
+# Get git short hash
 try {
     $gitHash = git rev-parse --short HEAD
 } catch {
-    Write-Error "No se pudo obtener el hash de git."
+    Write-Error "Could not get git hash. Are you in a git repository?"
     exit 1
 }
 
+# Clean version
 $safeVersion = -join ($version.ToCharArray() | Where-Object { $_ -match '[a-zA-Z0-9._-]' })
+
+# Construct tag
 $tag = "v${safeVersion}-dev-${gitHash}"
 
-# Comprobar si el tag ya existe
-$existingTags = git tag --list $tag
-if ($existingTags) {
-    Write-Warning "El tag '$tag' ya existe localmente."
-} else {
-    git tag -a $tag -m "Dev build $tag"
-    Write-Host "Tag local creado: $tag"
-}
-
-git push origin $tag
-Write-Host "Tag subido a origin: $tag"
+Write-Host "Creating and pushing tag: $tag"
+git tag -a $tag -m "Dev build $tag"
+git push origin "refs/tags/$tag"
+Write-Host "Tag successfully pushed: $tag"

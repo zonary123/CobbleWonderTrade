@@ -36,4 +36,12 @@ dependencies {
     api("net.luckperms:api:${property("luckperms_version")}")
     api("org.spigotmc:spigot-api:${property("spigot_version")}")
     api("com.github.MilkBowl:VaultAPI:${property("vault_api_version")}")
+
+    // Test dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

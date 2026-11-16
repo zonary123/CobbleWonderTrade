@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-16
+
+### Added
+
+- **Custom Menu & Rotom Phone Support**: Added a pluggable menu system (`WonderTradeMenuProvider` & `WonderTradeMenuRegistry`) allowing companion mods such as Rotom Phone, custom graphical screens, or web panels to replace standard chest GUIs with custom interfaces for trading and viewing the pool.
+- **Headless Trading & Status API**: Added headless services (`WonderTradeActionService`, `WonderTradeContextService`) that let companion mods trigger trades, inspect active cooldowns, check requirements, and view pool statistics without opening any menus.
+- **Developer API & Artifacts**: Published a dedicated `-api.jar` artifact containing all API interfaces, application services, and models for third-party modders and server developers.
+
+### Changed
+
+- Command handlers and menu dispatches now route through the unified `WonderTradeApi` and menu registry.
+- Automated release workflow now publishes all release artifacts including developer API jars to GitHub and Discord.
+
 ## [1.3.9] - 2026-11-15
 
 ### Added
